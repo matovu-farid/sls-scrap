@@ -1,0 +1,65 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: matovufarid
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: sls-scrap
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: sls-scrap
+
+# package:
+#   individually: true
+#   patterns:
+#     - '!node_modules/**'
+
+# build:
+#   minify: true
+#   packages: external
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ${env:AWS_REGION}
+
+  environment:
+    UPSTASH_REDIS_REST_URL: ${env:UPSTASH_REDIS_REST_URL}
+    UPSTASH_REDIS_REST_TOKEN: ${env:UPSTASH_REDIS_REST_TOKEN}
+    QUEUE_URL: ${env:QUEUE_URL}
+  layers:
+    - ${env:CHROMIUM_LAYER_ARN}
+  iam:
+    role:
+      statements: # permissions for all of your functions can be set here
+        - Effect: Allow
+          Action:
+            - sqs:SendMessage
+          Resource: "arn:aws:sqs:af-south-1:*:*"
+        - Effect: Allow
+          Action:
+            - sns:Publish
+          Resource: "arn:aws:sns:af-south-1:*:*"
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+          Resource: "arn:aws:s3:::scrappy-scrapped"
+
+functions:
+  # api:
+  #   memorySize: 1024
+  #   handler: api.handler
+  #   events:
+  #     - http:
+  #         path: api/scrap
+  #         method: post
+  explore:
+    timeout: 900
+    memorySize: 1024
+
+    handler: src/exploreHandler.handler
+    events:
+      - sqs:
+          arn: ${env:QUEUE_ARN}
+          batchSize: 1
+
+    environment:
+      OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+      SCRAPE_TOPIC_ARN: ${env:SCRAPE_TOPIC_ARN}
