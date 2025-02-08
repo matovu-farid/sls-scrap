@@ -1,5 +1,5 @@
-import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+const puppeteer = require("puppeteer-core");
+const chromium = require("@sparticuz/chromium");
 
 export async function getBrowser() {
   const browser = await puppeteer.launch({
