@@ -1,7 +1,7 @@
 
 import { exploreUrlsAndQueue } from "./exploreHelpers";
 // @ts-ignore
-import { getBrowser } from "./getBrowser.cjs";
+import { getBrowser } from "./getBrowser.js";
 
 export async function explore(
   url: string,
