@@ -15,10 +15,11 @@ build:
     bundle: true
     # format: cjs
     # outfile: out.cjs
-    external:
-      - http
-      - https
-      - url
+    packages: external
+    # external:
+    #   - http
+    #   - https
+    #   - url
 
 # build:
 #   minify: true
