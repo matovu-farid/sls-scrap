@@ -1,7 +1,7 @@
 const puppeteer = require("puppeteer-core");
 const chromium = require("@sparticuz/chromium");
 
-export async function getBrowser() {
+async function getBrowser() {
   const browser = await puppeteer.launch({
     args: chromium.args,
     defaultViewport: chromium.defaultViewport,
@@ -14,3 +14,5 @@ export async function getBrowser() {
   });
   return browser;
 }
+
+module.exports = { getBrowser };
