@@ -70,6 +70,8 @@ functions:
       - sqs:
           arn: ${env:QUEUE_ARN}
           batchSize: 1
+  ai:
+    handler: src/aiHandler.handler
 
     environment:
       OPENAI_API_KEY: ${env:OPENAI_API_KEY}
