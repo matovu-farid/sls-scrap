@@ -10,6 +10,7 @@ export async function handler(
   done: Callback
 ) {
   event.Records.forEach(async (record: any) => {
+    console.log(record);
     const data = JSON.parse(record.body);
 
     const { host, prompt } = aiMessageSchema.parse(data);
