@@ -10,14 +10,12 @@ export const handler = async (event: any, context: any, done: any) => {
   const host = parsedURL.host.replace("www.", "");
   await delCache(host);
 
-  
   await push<ScrapMessage>({
     url: url,
     host,
     links: [],
     prompt,
-    type: "explore",
-  })
+  });
 
   done(null, {
     statusCode: 200,

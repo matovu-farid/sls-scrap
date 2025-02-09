@@ -5,7 +5,6 @@ export const scrapMessageSchema = z.object({
   host: z.string(),
   links: z.array(z.string()),
   prompt: z.string(),
-  type: z.enum(["explore", "scrape"]),
 });
 
 export type ScrapMessage = z.infer<typeof scrapMessageSchema>;

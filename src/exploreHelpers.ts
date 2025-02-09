@@ -1,4 +1,4 @@
-import { Page } from "puppeteer-core";
+import type { Page } from "puppeteer-core";
 
 import { getS3Key, setData } from "./entites/s3";
 import { getCache, setCache } from "./entites/cache";
@@ -6,6 +6,8 @@ import { normalize } from "./utils/normalize";
 import { hostDataSchema } from "./schemas/hostdata";
 import { push } from "./entites/sqs";
 import { ScrapMessage } from "./schemas/scapMessage";
+import { publish } from "./entites/sns";
+import { AiMessage } from "./schemas/aiMessage";
 
 const queryLinks = async (page: Page) => {
   return await page.evaluate(() => {
@@ -91,7 +93,6 @@ export async function exploreUrlsAndQueue(
           host,
           links: linkData.map((url) => url.url),
           prompt,
-          type: "explore",
         })
       );
     });
@@ -116,11 +117,9 @@ export async function exploreUrlsAndQueue(
   const cache = await getCache(host, hostDataSchema);
   if (cache.scraped) {
     operations.push(
-      push({
-        url,
+      publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN || "", {
         host,
         prompt,
-        type: "scrape",
       })
     );
   }
