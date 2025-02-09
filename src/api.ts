@@ -2,10 +2,18 @@ import { normalize } from "./utils/normalize";
 import { delCache } from "./entites/cache";
 import { ScrapMessage } from "./schemas/scapMessage";
 import { push } from "./entites/sqs";
+import { apiMessageSchema } from "./schemas/apiMessage";
 
 export const handler = async (event: any, context: any, done: any) => {
-  const { url, prompt } = JSON.parse(event.body || "{}");
+  const result = apiMessageSchema.safeParse(JSON.parse(event.body));
 
+  if (!result.success) {
+    return {
+      statusCode: 400,
+      body: "Invalid request, missing url or prompt",
+    };
+  }
+  const { url, prompt } = result.data;
   const parsedURL = new URL(normalize(url));
   const host = parsedURL.host.replace("www.", "");
   await delCache(host);
