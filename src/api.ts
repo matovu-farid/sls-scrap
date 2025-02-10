@@ -10,7 +10,7 @@ export const handler = async (event: any, context: any, done: any) => {
   if (!result.success) {
     return {
       statusCode: 400,
-      body: "Invalid request, missing url or prompt",
+      body: "Invalid request, missing url, prompt or callbackUrl",
     };
   }
   const { url, prompt, callbackUrl } = result.data;
