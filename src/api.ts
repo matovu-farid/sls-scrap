@@ -3,9 +3,14 @@ import { delCache } from "./entites/cache";
 import { ScrapMessage } from "./schemas/scapMessage";
 import { push } from "./entites/sqs";
 import { apiMessageSchema } from "./schemas/apiMessage";
+import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 
-export const handler = async (event: any, context: any, done: any) => {
-  const result = apiMessageSchema.safeParse(JSON.parse(event.body));
+export const handler = async (
+  event: APIGatewayProxyEvent,
+  context: Context,
+  done: Callback
+) => {
+  const result = apiMessageSchema.safeParse(JSON.parse(event.body || "{}"));
 
   if (!result.success) {
     return {
