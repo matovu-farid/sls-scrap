@@ -2,7 +2,7 @@ import { explore } from "./explore";
 import { scrapMessageSchema } from "./schemas/scapMessage";
 import type { SQSEvent, Context, Callback } from "aws-lambda";
 
-// import { scrape } from "./scrape";
+
 
 export async function handler(
   event: SQSEvent,
@@ -11,9 +11,9 @@ export async function handler(
 ) {
   event.Records.forEach(async (record: any) => {
     const data = JSON.parse(record.body);
-    const { url, prompt, host, callbackUrl, links } = scrapMessageSchema.parse(data);
+    const { url, prompt, host, callbackUrl, links, signSecret } = scrapMessageSchema.parse(data);
 
-    await explore(url, prompt, host, callbackUrl, links);
+    await explore(url, prompt, host, callbackUrl, signSecret, links);
   });
   done(null, {
     statusCode: 200,

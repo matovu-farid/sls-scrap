@@ -6,6 +6,7 @@ export const scrapMessageSchema = z.object({
   links: z.array(z.string()),
   prompt: z.string(),
   callbackUrl: z.string(),
+  signSecret: z.string(),
 });
 
 export type ScrapMessage = z.infer<typeof scrapMessageSchema>;

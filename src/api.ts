@@ -11,6 +11,8 @@ export const handler = async (
   done: Callback
 ) => {
   const result = apiMessageSchema.safeParse(JSON.parse(event.body || "{}"));
+  // get x-api-key from header
+  const signSecret = event.headers["x-api-key"] || "";
 
   if (!result.success) {
     return {
@@ -28,7 +30,8 @@ export const handler = async (
     host,
     links: [],
     prompt,
-    callbackUrl,
+    signSecret,
+    callbackUrl,  
   });
 
   done(null, {

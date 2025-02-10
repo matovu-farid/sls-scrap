@@ -1,9 +1,9 @@
 import { generateText } from "ai";
-import { getCache } from "./entites/cache";
-import { getData, getS3Key, setData } from "./entites/s3";
-import { hostDataSchema } from "./schemas/hostdata";
+import { getS3Key, setData } from "./entites/s3";
 import { openai } from "@ai-sdk/openai";
 import { publish } from "./entites/sns";
+import { getContent } from "./utils/content";
+import { ScrapResult } from "./schemas/scrapResult";
 
 export const scrape = async (host: string, prompt: string) => {
   const content = await getContent(host);
@@ -13,7 +13,6 @@ export const scrape = async (host: string, prompt: string) => {
   }
 
   const textData = JSON.stringify(content);
-  console.log({ textData });
 
   const { text } = await generateText({
     model: openai("gpt-4o-mini"),
@@ -27,29 +26,9 @@ export const scrape = async (host: string, prompt: string) => {
       </Details>`,
   });
   await setData(`scraped-data/${getS3Key(host)}`, text);
-  publish(process.env.SCRAPE_TOPIC_ARN || "", {
-    url: host,
-    type: "scrape",
+  publish<ScrapResult>(process.env.SCRAPE_TOPIC_ARN || "", {
+    host,
   });
 
   return text;
 };
-
-export async function getContent(host: string) {
-  if (typeof host !== "string") return "";
-  const hostData = await getCache(host, hostDataSchema);
-  if (!hostData) {
-    return null;
-  }
-
-  const { links } = hostData;
-
-  const content: Record<string, string> = {};
-  for (const link of links) {
-    const data = await getData(getS3Key(link.url), "url-data");
-    if (data) {
-      content[link.url] = data;
-    }
-  }
-  return content;
-}

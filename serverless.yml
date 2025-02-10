@@ -70,9 +70,7 @@ functions:
       - sqs:
           arn: ${env:QUEUE_ARN}
           batchSize: 1
-  ai:
+  ai-scrap:
     handler: src/aiHandler.handler
-
-    environment:
-      OPENAI_API_KEY: ${env:OPENAI_API_KEY}
-      SCRAPE_TOPIC_ARN: ${env:SCRAPE_TOPIC_ARN}
+  scrapResults:
+    handler: src/scrap-result.handler

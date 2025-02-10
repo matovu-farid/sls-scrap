@@ -37,6 +37,7 @@ export async function exploreUrlsAndQueue(
   prompt: string,
   passedHost: string,
   callbackUrl: string,
+  signSecret: string,
   passedLinks?: string[]
 ) {
   const url = normalize(passedUrl);
@@ -58,6 +59,7 @@ export async function exploreUrlsAndQueue(
       scraped: false,
     })),
     scraped: false,
+    signSecret,
   };
 
   const link = linkData.find((link) => link.url === url);
@@ -88,6 +90,7 @@ export async function exploreUrlsAndQueue(
           links: linkData.map((url) => url.url),
           prompt,
           callbackUrl,
+          signSecret,
         })
       );
     });
