@@ -14,14 +14,7 @@ const queryLinks = async (page: Page) => {
     return Array.from(document.querySelectorAll("a")).map((a) => a.href);
   });
 };
-/**
- *
- * @param {import('puppeteer-core').Page} page
- * @param {string} host
- * @param {string} url
- * @param {string[]} [passedLinks]
- * @returns {Promise<string[]>}
- */
+
 async function getLinksForHost(
   page: Page,
   host: string,
@@ -43,6 +36,7 @@ export async function exploreUrlsAndQueue(
   page: Page,
   prompt: string,
   passedHost: string,
+  callbackUrl: string,
   passedLinks?: string[]
 ) {
   const url = normalize(passedUrl);
@@ -93,6 +87,7 @@ export async function exploreUrlsAndQueue(
           host,
           links: linkData.map((url) => url.url),
           prompt,
+          callbackUrl,
         })
       );
     });
@@ -120,6 +115,7 @@ export async function exploreUrlsAndQueue(
       publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN || "", {
         host,
         prompt,
+        callbackUrl,
       })
     );
   }

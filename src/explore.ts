@@ -7,11 +7,13 @@ export async function explore(
   url: string,
   prompt: string,
   host: string,
-  links?: string[]
+  callbackUrl: string,
+  links?: string[],
+
 ) {
   const browser = await getBrowser();
   const page = await browser.newPage();
 
-  await exploreUrlsAndQueue(url, page, prompt, host, links);
+  await exploreUrlsAndQueue(url, page, prompt, host, callbackUrl, links);
   browser.close();
 }

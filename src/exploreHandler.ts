@@ -11,9 +11,9 @@ export async function handler(
 ) {
   event.Records.forEach(async (record: any) => {
     const data = JSON.parse(record.body);
-    const { url, prompt, host, links } = scrapMessageSchema.parse(data);
+    const { url, prompt, host, callbackUrl, links } = scrapMessageSchema.parse(data);
 
-    await explore(url, prompt, host, links);
+    await explore(url, prompt, host, callbackUrl, links);
   });
   done(null, {
     statusCode: 200,

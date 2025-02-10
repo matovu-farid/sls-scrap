@@ -13,7 +13,7 @@ export const handler = async (event: any, context: any, done: any) => {
       body: "Invalid request, missing url or prompt",
     };
   }
-  const { url, prompt } = result.data;
+  const { url, prompt, callbackUrl } = result.data;
   const parsedURL = new URL(normalize(url));
   const host = parsedURL.host.replace("www.", "");
   await delCache(host);
@@ -23,6 +23,7 @@ export const handler = async (event: any, context: any, done: any) => {
     host,
     links: [],
     prompt,
+    callbackUrl,
   });
 
   done(null, {
