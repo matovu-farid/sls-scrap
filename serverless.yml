@@ -74,3 +74,5 @@ functions:
     handler: src/aiHandler.handler
   scrapResults:
     handler: src/scrap-result.handler
+  callWebhooks:
+    handler: src/call-webhooks.handler
