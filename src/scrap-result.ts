@@ -7,6 +7,8 @@ import { hostDataSchema } from "./schemas/hostdata";
 import crypto from "crypto";
 import { publish } from "./entites/sns";
 import { WebHookEvent } from "./call-webHooks";
+import { getSigniture } from "./utils/getSigniture";
+import { publishWebhook } from "./utils/publishWebhook";
 export const handler = async (
   event: SQSEvent,
   context: Context,
@@ -18,33 +20,19 @@ export const handler = async (
     //   await setData(`scraped-data/${getS3Key(host)}`, text);
     const results = (await getData(getS3Key(host), "scraped-data")) || "";
     const cachedData = await getCache(host, hostDataSchema);
-    const timestamp = new Date().toISOString();
 
     const body = {
       url: host,
       results,
-      timestamp,
     };
-    const signature = crypto
-      .createHmac("sha256", cachedData.signSecret)
-      .update(`${timestamp}.${body}`)
-      .digest("hex");
 
-    // await axios.post(cachedData.callbackUrl, body, {
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //     "x-webhook-signature": signature,
-    //     "x-webhook-timestamp": timestamp,
-    //   },
-    // });
-    await publish<WebHookEvent>(process.env.WEBHOOK_TOPIC_ARN!, {
-      webhook: cachedData.callbackUrl,
-      data: body,
-      headers: {
-        "Content-Type": "application/json",
-        "x-webhook-signature": signature,
-        "x-webhook-timestamp": timestamp,
+    await publishWebhook(
+      cachedData.callbackUrl,
+      {
+        type: "scraped",
+        data: body,
       },
-    });
+      cachedData.signSecret
+    );
   });
 };

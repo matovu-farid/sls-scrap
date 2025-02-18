@@ -8,6 +8,9 @@ import { push } from "./entites/sqs";
 import { ScrapMessage } from "./schemas/scapMessage";
 import { publish } from "./entites/sns";
 import { AiMessage } from "./schemas/aiMessage";
+import { WebHookEvent } from "./call-webHooks";
+import { getSigniture } from "./utils/getSigniture";
+import { publishWebhook } from "./utils/publishWebhook";
 
 const queryLinks = async (page: Page) => {
   return await page.evaluate(() => {
@@ -47,6 +50,18 @@ export async function exploreUrlsAndQueue(
   // Navigate the page to a URL
   await page.goto(parsedURL.toString());
   const links = await getLinksForHost(page, host, url, passedLinks);
+  if (!passedLinks || passedLinks.length === 0) {
+    await publishWebhook(
+      callbackUrl,
+      {
+        type: "links",
+        data: {
+          links,
+        },
+      },
+      signSecret
+    );
+  }
 
   const { explored, links: linkData } = (await getCache(
     host,
