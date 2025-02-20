@@ -66,23 +66,19 @@ export async function exploreUrlsAndQueue(
       signSecret
     );
   }
-  const defaultHostData: HostData = {
-    stage: "explore",
-    count: links.length,
-    explored: 0,
-    links: links.map((link) => ({
-      url: link,
-      scraped: false,
-    })),
-    scraped: false,
-    signSecret,
-    callbackUrl,
-  };
-  const { links: linkData } = await getLinkData(host, defaultHostData);
-  const link = linkData.find((link) => link.url === url);
-  if (!link || link.scraped) {
-    return null;
+
+  let cachedData = await getCache<HostData>(host, hostDataSchema);
+  if (!cachedData || cachedData.count === 0) {
+    await updateHostDataInCache(host, () => ({
+      count: links.length,
+
+      links: links.map((link) => ({
+        url: link,
+        scraped: false,
+      })),
+    }));
   }
+  cachedData = await getCache<HostData>(host, hostDataSchema);
 
   const textContent = await page.evaluate(() => {
     return (
@@ -97,14 +93,14 @@ export async function exploreUrlsAndQueue(
   const operations: Promise<any>[] = [];
   operations.push(setData(`url-data/${getS3Key(url)}`, textContent));
 
-  linkData
+  cachedData?.links
     .filter((link) => !link.scraped)
     .forEach((link) => {
       operations.push(
         publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
           url: link.url,
           host,
-          links: linkData.map((url) => url.url),
+          links: cachedData?.links.map((url) => url.url),
           prompt,
           callbackUrl,
           signSecret,
