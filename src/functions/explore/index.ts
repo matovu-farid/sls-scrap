@@ -13,14 +13,18 @@ export async function handler(
   done: Callback
 ) {
   event.Records.forEach(async (record) => {
-    const { url } =
-      parseSNSMessegeInSQSRecord(record, scrapMessageSchema);
+    const { url } = parseSNSMessegeInSQSRecord(record, scrapMessageSchema);
     const host = getHost(url);
-   
+
     const cache = await getCache<HostData>(host, hostDataSchema);
-    if (cache?.scraped) {
+    if (cache?.scraped || cache?.links.find((link) => link.url === url)?.scraped) {
+      done(null, {
+        statusCode: 200,
+        body: "Success",
+      });
       return;
     }
+
     if (!cache?.links.find((link) => link.url === url)?.scraped) {
       await explore(url);
     }
