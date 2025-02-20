@@ -1,6 +1,7 @@
 import type{ Callback, Context, SQSEvent } from "aws-lambda";
 import axios from "axios";
 import { webHookSchema } from "@/utils/webHooks";
+import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
 
 
 
@@ -10,11 +11,18 @@ export async function handler(
   done: Callback
 ) {
   console.log(event);
+  const promises: Promise<any>[] = [];
   event.Records.forEach(async (record: any) => {
-    const data = JSON.parse(record.body);
-    const { webhook, data: webHookData, headers } = webHookSchema.parse(data);
-    const response = await axios.post(webhook, webHookData, { headers });
-    console.log(response);
+    const { webhook, data: webHookData, headers } = parseSNSMessegeInSQSRecord(
+      record,
+      webHookSchema
+    );
+    promises.push(
+      axios.post(webhook, webHookData, { headers }).then((response) => {
+        console.log(response);
+      })
+    );
   });
+  await Promise.allSettled(promises);
   done(null, "Success");
 }

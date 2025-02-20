@@ -7,5 +7,6 @@ export const hostDataSchema = z.object({
   scraped: z.boolean(),
   signSecret: z.string(),
   callbackUrl: z.string(),
+  result: z.string().optional(),
 });
 export type HostData = z.infer<typeof hostDataSchema>;
