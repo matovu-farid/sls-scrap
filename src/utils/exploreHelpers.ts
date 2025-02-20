@@ -76,10 +76,7 @@ export async function exploreUrlsAndQueue(
     signSecret,
     callbackUrl,
   };
-  const { explored, links: linkData } = await getLinkData(
-    host,
-    defaultHostData
-  );
+  const { links: linkData } = await getLinkData(host, defaultHostData);
   const link = linkData.find((link) => link.url === url);
   if (!link || link.scraped) {
     return null;
@@ -102,7 +99,7 @@ export async function exploreUrlsAndQueue(
     .filter((link) => !link.scraped)
     .forEach((link) => {
       operations.push(
-        push<ScrapMessage>({
+        publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
           url: link.url,
           host,
           links: linkData.map((url) => url.url),
