@@ -145,7 +145,7 @@ export async function exploreUrlsAndQueue(
   const cache = await getCache<HostData>(host, hostDataSchema);
   if (cache?.scraped) {
     operations.push(
-      publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN || "", {
+      publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN!, {
         host,
         prompt,
       })

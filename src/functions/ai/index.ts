@@ -1,10 +1,10 @@
-
 import { aiMessageSchema } from "@/schemas/aiMessage";
 import { scrape } from "@/utils/scrape";
 import type { SQSEvent, Context, Callback } from "aws-lambda";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { getCache } from "@/entites/cache";
 import { publishWebhook } from "@/utils/publishWebhook";
+import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
 
 export async function handler(
   event: SQSEvent,
@@ -12,10 +12,10 @@ export async function handler(
   done: Callback
 ) {
   event.Records.forEach(async (record: any) => {
-    console.log(record);
-    const data = JSON.parse(record.body);
-
-    const { host, prompt } = aiMessageSchema.parse(data);
+    const { host, prompt } = parseSNSMessegeInSQSRecord(
+      record,
+      aiMessageSchema
+    );
 
     const results = await scrape(host, prompt);
     const cache = await getCache<HostData>(host, hostDataSchema);
@@ -39,5 +39,3 @@ export async function handler(
     body: "Success",
   });
 }
-
-
