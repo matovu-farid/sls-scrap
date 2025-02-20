@@ -1,14 +1,15 @@
 import type { Page } from "puppeteer-core";
 
-import { getS3Key, setData } from "./entites/s3";
-import { getCache, setCache } from "./entites/cache";
-import { normalize } from "./utils/normalize";
-import { hostDataSchema } from "./schemas/hostdata";
-import { push } from "./entites/sqs";
-import { ScrapMessage } from "./schemas/scapMessage";
-import { publish } from "./entites/sns";
-import { AiMessage } from "./schemas/aiMessage";
-import { publishWebhook } from "./utils/publishWebhook";
+import { getS3Key, setData } from "@/entites/s3";
+import { getCache } from "@/entites/cache";
+import { syncSetCache } from "@/utils/syncSetCache";
+import { normalize } from "@/utils/normalize";
+import { HostData, hostDataSchema } from "@/schemas/hostdata";
+import { push } from "@/entites/sqs";
+import type { ScrapMessage } from "@/schemas/scapMessage";
+import { publish } from "@/entites/sns";
+import type { AiMessage } from "@/schemas/aiMessage";
+import { publishWebhook } from "@/utils/publishWebhook";
 
 const queryLinks = async (page: Page) => {
   return await page.evaluate(() => {
@@ -22,16 +23,19 @@ async function getLinksForHost(
   url: string,
   passedLinks?: string[]
 ) {
-  const links = passedLinks || (await queryLinks(page)).map(normalize);
+  let links = passedLinks;
+  if (!links || links.length == 0) {
+    links = (await queryLinks(page)).map(normalize);
+  }
   const filteredLinks = Array.from(
-    new Set([
-      ...links.filter((link) => new URL(normalize(link)).host === host),
-      url,
-    ])
+    new Set([...links.filter((link) => new URL(link).host === host), url])
   );
   return filteredLinks;
 }
 
+async function getLinkData(host: string, defaultHostData: HostData) {
+  return (await getCache<HostData>(host, hostDataSchema)) || defaultHostData;
+}
 export async function exploreUrlsAndQueue(
   passedUrl: string,
   page: Page,
@@ -61,11 +65,7 @@ export async function exploreUrlsAndQueue(
       signSecret
     );
   }
-
-  const { explored, links: linkData } = (await getCache(
-    host,
-    hostDataSchema
-  )) || {
+  const defaultHostData: HostData = {
     count: links.length,
     explored: 0,
     links: links.map((link) => ({
@@ -74,8 +74,12 @@ export async function exploreUrlsAndQueue(
     })),
     scraped: false,
     signSecret,
+    callbackUrl,
   };
-
+  const { explored, links: linkData } = await getLinkData(
+    host,
+    defaultHostData
+  );
   const link = linkData.find((link) => link.url === url);
   if (!link || link.scraped) {
     return null;
@@ -109,30 +113,44 @@ export async function exploreUrlsAndQueue(
       );
     });
   operations.push(
-    setCache(host, {
-      count: linkData.length,
-      explored: explored + 1,
-      links: linkData.map((link) => {
-        if (link.url === url) {
-          return {
-            ...link,
-            scraped: true,
-          };
+    syncSetCache<HostData>(
+      host,
+      async () => {
+        const { links, explored } =
+          (await getCache<HostData>(host, hostDataSchema)) || defaultHostData;
+        const link = linkData.find((link) => link.url === url);
+        if (!link || link?.scraped) {
+          return null;
         }
-        return link;
-      }),
-      scraped: explored + 1 === linkData.length,
-    })
+        const exploredCount = Math.min(explored + 1, linkData.length);
+        return {
+          count: links.length,
+          explored: exploredCount,
+          links: links.map((link) => {
+            if (link.url === url) {
+              return {
+                ...link,
+                scraped: true,
+              };
+            }
+            return link;
+          }),
+          scraped: exploredCount === links.length,
+          callbackUrl,
+          signSecret,
+        };
+      },
+      "host-data"
+    )
   );
 
   await Promise.all(operations);
-  const cache = await getCache(host, hostDataSchema);
-  if (cache.scraped) {
+  const cache = await getCache<HostData>(host, hostDataSchema);
+  if (cache?.scraped) {
     operations.push(
       publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN || "", {
         host,
         prompt,
-        callbackUrl,
       })
     );
   }

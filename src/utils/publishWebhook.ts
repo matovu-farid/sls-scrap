@@ -1,6 +1,6 @@
-import { WebHookEvent, WebHookEventData } from "@/call-webHooks";
+import type { WebHookEvent, WebHookEventData } from "@/utils/webHooks";
 import { publish } from "@/entites/sns";
-import { getSigniture } from "./getSigniture";
+import { getSigniture } from "@/utils/getSigniture";
 
 /**
  * Publish a webhook event to the SNS topic

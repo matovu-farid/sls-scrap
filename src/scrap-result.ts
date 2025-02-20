@@ -1,13 +1,8 @@
-import axios from "axios";
 import type { Context, Callback, SQSEvent } from "aws-lambda";
 import { scrapResultSchema } from "@/schemas/scrapResult";
 import { getData, getS3Key } from "@/entites/s3";
 import { getCache } from "@/entites/cache";
 import { hostDataSchema } from "./schemas/hostdata";
-import crypto from "crypto";
-import { publish } from "./entites/sns";
-import { WebHookEvent } from "./call-webHooks";
-import { getSigniture } from "./utils/getSigniture";
 import { publishWebhook } from "./utils/publishWebhook";
 export const handler = async (
   event: SQSEvent,

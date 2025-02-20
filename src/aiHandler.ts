@@ -1,4 +1,3 @@
-import { explore } from "./explore";
 import { aiMessageSchema } from "./schemas/aiMessage";
 import { scrape } from "./scrape";
 import type { SQSEvent, Context, Callback } from "aws-lambda";

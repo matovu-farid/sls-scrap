@@ -15,7 +15,7 @@ build:
     bundle: true
     # format: cjs
     # outfile: out.cjs
-    packages: external
+    # packages: external
     # external:
     #   - http
     #   - https
@@ -34,8 +34,8 @@ provider:
     UPSTASH_REDIS_REST_URL: ${env:UPSTASH_REDIS_REST_URL}
     UPSTASH_REDIS_REST_TOKEN: ${env:UPSTASH_REDIS_REST_TOKEN}
     QUEUE_URL: ${env:QUEUE_URL}
-  layers:
-    - ${env:CHROMIUM_LAYER_ARN}
+  # layers:
+  #   - ${env:CHROMIUM_LAYER_ARN}
   iam:
     role:
       statements: # permissions for all of your functions can be set here
@@ -52,27 +52,90 @@ provider:
             - s3:GetObject
             - s3:PutObject
           Resource: "arn:aws:s3:::scrappy-scrapped"
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+          Resource: "arn:aws:s3:::scrappy-scrapped/*"
 
 functions:
   api:
     memorySize: 1024
-    handler: src/api.handler
     events:
       - http:
           path: api/scrap
           method: post
+    handler: src/functions/api/index.handler
+    package:
+      individually: true
+      exclude:
+        - "./**"
+      include:
+        - ./src/functions/api/index.handler.ts
+        - ./src/functions/api/node_modules/**
+        - ./src/functions/api/package.json
+
   explore:
+    layers:
+      - ${env:CHROMIUM_LAYER_ARN}
     timeout: 900
     memorySize: 1024
 
-    handler: src/exploreHandler.handler
     events:
       - sqs:
           arn: ${env:QUEUE_ARN}
           batchSize: 1
-  ai-scrap:
-    handler: src/aiHandler.handler
-  scrapResults:
-    handler: src/scrap-result.handler
-  callWebhooks:
-    handler: src/call-webhooks.handler
+    handler: src/functions/explore/index.handler
+    package:
+      individually: true
+      exclude:
+        - "./**"
+      include:
+        - ./src/functions/explore/index.handler.ts
+        - ./src/functions/explore/node_modules/**
+        - ./src/functions/explore/package.json
+    environment:
+      UPSTASH_REDIS_REST_URL: ${env:UPSTASH_REDIS_REST_URL}
+      UPSTASH_REDIS_REST_TOKEN: ${env:UPSTASH_REDIS_REST_TOKEN}
+      QUEUE_URL: ${env:QUEUE_URL}
+      SCRAPE_TOPIC_ARN: ${env:SCRAPE_TOPIC_ARN}
+      EXPLORE_DONE_TOPIC_ARN: ${env:EXPLORE_DONE_TOPIC_ARN}
+      WEBHOOK_TOPIC_ARN: ${env:WEBHOOK_TOPIC_ARN}
+  ai:
+    timeout: 900
+
+    events:
+      - sqs:
+          arn: ${env:AI_QUEUE_ARN}
+          batchSize: 1
+    handler: src/functions/ai/index.handler
+    package:
+      individually: true
+      exclude:
+        - "./**"
+      include:
+        - ./src/functions/ai/index.handler.ts
+        - ./src/functions/ai/node_modules/**
+        - ./src/functions/ai/package.json
+    environment:
+      UPSTASH_REDIS_REST_URL: ${env:UPSTASH_REDIS_REST_URL}
+      UPSTASH_REDIS_REST_TOKEN: ${env:UPSTASH_REDIS_REST_TOKEN}
+      QUEUE_URL: ${env:QUEUE_URL}
+      SCRAPE_TOPIC_ARN: ${env:SCRAPE_TOPIC_ARN}
+      EXPLORE_DONE_TOPIC_ARN: ${env:EXPLORE_DONE_TOPIC_ARN}
+      WEBHOOK_TOPIC_ARN: ${env:WEBHOOK_TOPIC_ARN}
+      OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+  webhooks:
+    events:
+    - sqs:
+        arn: ${env:WEBHOOK_QUEUE_ARN}
+        batchSize: 1
+    handler: src/functions/webhooks/index.handler
+    package:
+      individually: true
+      exclude:
+        - "./**"
+      include:
+        - ./src/functions/webhooks/index.handler.ts
+        - ./src/functions/webhooks/node_modules/**
+        - ./src/functions/webhooks/package.json
