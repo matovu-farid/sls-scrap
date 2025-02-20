@@ -4,13 +4,14 @@ import { ScrapMessage } from "@/schemas/scapMessage";
 import { push } from "@/entites/sqs";
 import { apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
+import { publish } from "@/entites/sns";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
   context: Context,
   done: Callback
 ) => {
-  const result = apiMessageSchema.safeParse(JSON.parse(event.body || "{}"));
+  const result = apiMessageSchema.safeParse(JSON.parse(event.body!));
   // get x-api-key from header
   const signSecret = event.headers["x-api-key"] || "";
 
@@ -22,16 +23,19 @@ export const handler = async (
   }
   const { url, prompt, callbackUrl } = result.data;
   const parsedURL = new URL(normalize(url));
-  const host = parsedURL.host.replace("www.", "");
+  
+
+  const host = parsedURL.host;
   await delCache(host);
 
-  await push<ScrapMessage>({
+
+  await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
     url: url,
     host,
     links: [],
     prompt,
     signSecret,
-    callbackUrl,  
+    callbackUrl,
   });
 
   done(null, {
