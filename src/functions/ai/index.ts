@@ -5,7 +5,7 @@ import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { getCache } from "@/entites/cache";
 import { publishWebhook } from "@/utils/publishWebhook";
 import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
-import { syncSetCache } from "@/utils/syncSetCache";
+import { updateHostDataInCache } from "@/utils/updateHostDataInCache";
 
 export async function handler(
   event: SQSEvent,
@@ -13,34 +13,25 @@ export async function handler(
   done: Callback
 ) {
   const promises: Promise<any>[] = [];
+
   event.Records.forEach(async (record: any) => {
     const { host, prompt } = parseSNSMessegeInSQSRecord(
       record,
       aiMessageSchema
     );
 
+    updateHostDataInCache(host, () => ({
+      stage: "webhook",
+    }));
     const results = await scrape(host, prompt);
     const cache = await getCache<HostData>(host, hostDataSchema);
     if (!cache || !results) {
       return;
     }
 
-    promises.push(
-      syncSetCache<HostData>(
-        host,
-        async () => {
-          const currentValue = await getCache<HostData>(host, hostDataSchema);
-          if (!currentValue) {
-            return null;
-          }
-          return {
-            ...currentValue,
-            result: results,
-          };
-        },
-        host
-      )
-    );
+    updateHostDataInCache(host, () => ({
+      result: results,
+    }));
 
     promises.push(
       publishWebhook(

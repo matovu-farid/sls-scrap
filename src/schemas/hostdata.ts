@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const hostDataSchema = z.object({
+  stage: z.enum(["explore", "ai", "webhook"]),
   count: z.number(),
   explored: z.number(),
   links: z.array(z.object({ url: z.string(), scraped: z.boolean() })),

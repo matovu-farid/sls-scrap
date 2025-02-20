@@ -10,6 +10,7 @@ import type { ScrapMessage } from "@/schemas/scapMessage";
 import { publish } from "@/entites/sns";
 import type { AiMessage } from "@/schemas/aiMessage";
 import { publishWebhook } from "@/utils/publishWebhook";
+import { updateHostDataInCache } from "./updateHostDataInCache";
 
 const queryLinks = async (page: Page) => {
   return await page.evaluate(() => {
@@ -66,6 +67,7 @@ export async function exploreUrlsAndQueue(
     );
   }
   const defaultHostData: HostData = {
+    stage: "explore",
     count: links.length,
     explored: 0,
     links: links.map((link) => ({
@@ -109,21 +111,51 @@ export async function exploreUrlsAndQueue(
         })
       );
     });
+  // operations.push(
+  //   syncSetCache<HostData>(
+  //     host,
+  //     async () => {
+  //       const { links, explored } =
+  //         (await getCache<HostData>(host, hostDataSchema)) || defaultHostData;
+  //       const link = linkData.find((link) => link.url === url);
+  //       if (!link || link?.scraped) {
+  //         return null;
+  //       }
+  //       const exploredCount = Math.min(explored + 1, linkData.length);
+  //       return {
+  //         stage: "explore",
+  //         count: links.length,
+  //         explored: exploredCount,
+  //         links: links.map((link) => {
+  //           if (link.url === url) {
+  //             return {
+  //               ...link,
+  //               scraped: true,
+  //             };
+  //           }
+  //           return link;
+  //         }),
+  //         scraped: exploredCount === links.length,
+  //         callbackUrl,
+  //         signSecret,
+  //       };
+  //     },
+  //     "host-data"
+  //   )
+  // );
   operations.push(
-    syncSetCache<HostData>(
+    updateHostDataInCache(
       host,
-      async () => {
-        const { links, explored } =
-          (await getCache<HostData>(host, hostDataSchema)) || defaultHostData;
-        const link = linkData.find((link) => link.url === url);
-        if (!link || link?.scraped) {
-          return null;
-        }
-        const exploredCount = Math.min(explored + 1, linkData.length);
+      (currentValue) => {
+        const exploredCount = Math.min(
+          currentValue.explored + 1,
+          currentValue.links.length
+        );
         return {
-          count: links.length,
+          count: currentValue.links.length,
           explored: exploredCount,
-          links: links.map((link) => {
+          scraped: exploredCount === currentValue.links.length,
+          links: currentValue.links.map((link) => {
             if (link.url === url) {
               return {
                 ...link,
@@ -132,12 +164,12 @@ export async function exploreUrlsAndQueue(
             }
             return link;
           }),
-          scraped: exploredCount === links.length,
-          callbackUrl,
-          signSecret,
         };
       },
-      "host-data"
+      (currentValue) => {
+        const link = currentValue.links.find((link) => link.url === url);
+        return !!(link && !link.scraped);
+      }
     )
   );
 

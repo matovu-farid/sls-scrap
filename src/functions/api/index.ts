@@ -1,10 +1,10 @@
 import { normalize } from "@/utils/normalize";
 import { delCache } from "@/entites/cache";
 import { ScrapMessage } from "@/schemas/scapMessage";
-import { push } from "@/entites/sqs";
 import { apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 import { publish } from "@/entites/sns";
+import { updateHostDataInCache } from "@/utils/updateHostDataInCache";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -23,11 +23,9 @@ export const handler = async (
   }
   const { url, prompt, callbackUrl } = result.data;
   const parsedURL = new URL(normalize(url));
-  
 
   const host = parsedURL.host;
   await delCache(host);
-
 
   await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
     url: url,
@@ -37,6 +35,11 @@ export const handler = async (
     signSecret,
     callbackUrl,
   });
+
+  await updateHostDataInCache(host, () => ({
+    signSecret,
+    callbackUrl,
+  }));
 
   done(null, {
     statusCode: 200,

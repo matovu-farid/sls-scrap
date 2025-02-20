@@ -2,8 +2,9 @@ import { getCache } from "@/entites/cache";
 import { explore } from "../../utils/explore";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { scrapMessageSchema } from "@/schemas/scapMessage";
-import type { SQSEvent, Context, Callback, SNSMessage } from "aws-lambda";
+import type { SQSEvent, Context, Callback } from "aws-lambda";
 import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
+import { updateHostDataInCache } from "@/utils/updateHostDataInCache";
 
 export async function handler(
   event: SQSEvent,
@@ -13,6 +14,9 @@ export async function handler(
   event.Records.forEach(async (record) => {
     const { url, prompt, host, callbackUrl, links, signSecret } =
       parseSNSMessegeInSQSRecord(record, scrapMessageSchema);
+    updateHostDataInCache(host, () => ({
+      stage: "explore",
+    }));
     const cache = await getCache<HostData>(host, hostDataSchema);
     if (cache?.scraped) {
       return;
