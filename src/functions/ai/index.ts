@@ -36,17 +36,13 @@ export async function handler(
     }));
 
     promises.push(
-      publishWebhook(
-        cache.callbackUrl,
-        {
-          type: "scraped",
-          data: {
-            url: host,
-            results,
-          },
+      publishWebhook(host, {
+        type: "scraped",
+        data: {
+          url: host,
+          results,
         },
-        cache.signSecret
-      )
+      })
     );
   });
 

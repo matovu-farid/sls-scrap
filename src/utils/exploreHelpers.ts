@@ -35,7 +35,7 @@ async function getLinksForHost(page: Page, host: string, url: string) {
   }));
 
   publishWebhook(
-    cache?.callbackUrl || "",
+    host,
     {
       type: "links",
       data: {
@@ -43,7 +43,6 @@ async function getLinksForHost(page: Page, host: string, url: string) {
         host,
       },
     },
-    cache?.signSecret || ""
   );
   return links;
 }

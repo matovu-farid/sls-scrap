@@ -26,9 +26,7 @@ export const scrape = async (host: string, prompt: string) => {
       </Details>`,
   });
   await setData(`scraped-data/${getS3Key(host)}`, text);
-  await publish<ScrapResult>(process.env.SCRAPE_TOPIC_ARN || "", {
-    host,
-  });
+
 
   return text;
 };
