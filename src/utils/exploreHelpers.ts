@@ -27,6 +27,14 @@ async function getLinksForHost(
   let links = passedLinks;
   if (!links || links.length == 0) {
     links = (await queryLinks(page)).map(normalize);
+    await updateHostDataInCache(host, () => ({
+      count: links?.length,
+
+      links: links?.map((link) => ({
+        url: link,
+        scraped: false,
+      })),
+    }));
   }
   const filteredLinks = Array.from(
     new Set([...links.filter((link) => new URL(link).host === host), url])
@@ -34,9 +42,6 @@ async function getLinksForHost(
   return filteredLinks;
 }
 
-async function getLinkData(host: string, defaultHostData: HostData) {
-  return (await getCache<HostData>(host, hostDataSchema)) || defaultHostData;
-}
 export async function exploreUrlsAndQueue(
   passedUrl: string,
   page: Page,
@@ -67,18 +72,7 @@ export async function exploreUrlsAndQueue(
     );
   }
 
-  let cachedData = await getCache<HostData>(host, hostDataSchema);
-  if (!cachedData || cachedData.count === 0) {
-    await updateHostDataInCache(host, () => ({
-      count: links.length,
-
-      links: links.map((link) => ({
-        url: link,
-        scraped: false,
-      })),
-    }));
-  }
-  cachedData = await getCache<HostData>(host, hostDataSchema);
+  const cachedData = await getCache<HostData>(host, hostDataSchema);
 
   const textContent = await page.evaluate(() => {
     return (
