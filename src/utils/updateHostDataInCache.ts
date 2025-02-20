@@ -12,6 +12,7 @@ export function updateHostDataInCache(
     async () => {
       const defaultHostData: HostData = {
         stage: "explore",
+        prompt: "",
         count: 0,
         explored: 0,
         links: [],

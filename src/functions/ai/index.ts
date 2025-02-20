@@ -15,21 +15,23 @@ export async function handler(
   const promises: Promise<any>[] = [];
 
   event.Records.forEach(async (record: any) => {
-    const { host, prompt } = parseSNSMessegeInSQSRecord(
-      record,
-      aiMessageSchema
-    );
+    const { host } = parseSNSMessegeInSQSRecord(record, aiMessageSchema);
 
-    updateHostDataInCache(host, () => ({
-      stage: "webhook",
-    }));
-    const results = await scrape(host, prompt);
     const cache = await getCache<HostData>(host, hostDataSchema);
-    if (!cache || !results) {
+
+    if (!cache) {
       return;
     }
 
     updateHostDataInCache(host, () => ({
+      stage: "webhook",
+    }));
+    const results = await scrape(host, cache.prompt);
+    if (!cache || !results) {
+      return;
+    }
+
+    await updateHostDataInCache(host, () => ({
       result: results,
     }));
 

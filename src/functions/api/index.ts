@@ -5,6 +5,7 @@ import { apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 import { publish } from "@/entites/sns";
 import { updateHostDataInCache } from "@/utils/updateHostDataInCache";
+import { getHost } from "@/utils/get-host";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -22,24 +23,18 @@ export const handler = async (
     };
   }
   const { url, prompt, callbackUrl } = result.data;
-  const parsedURL = new URL(normalize(url));
 
-  const host = parsedURL.host;
+
+  const host = getHost(url);
   await delCache(host);
-
-  await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
-    url: url,
-    host,
-    links: [],
-    prompt,
-    signSecret,
-    callbackUrl,
-  });
-
   await updateHostDataInCache(host, () => ({
     signSecret,
     callbackUrl,
+    prompt,
   }));
+  await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
+    url: url,
+  });
 
   done(null, {
     statusCode: 200,

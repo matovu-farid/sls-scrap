@@ -11,6 +11,7 @@ import { publish } from "@/entites/sns";
 import type { AiMessage } from "@/schemas/aiMessage";
 import { publishWebhook } from "@/utils/publishWebhook";
 import { updateHostDataInCache } from "./updateHostDataInCache";
+import { getHost } from "./get-host";
 
 const queryLinks = async (page: Page) => {
   return await page.evaluate(() => {
@@ -18,59 +19,56 @@ const queryLinks = async (page: Page) => {
   });
 };
 
-async function getLinksForHost(
-  page: Page,
-  host: string,
-  url: string,
-  passedLinks?: string[]
-) {
-  let links = passedLinks;
-  if (!links || links.length == 0) {
-    links = (await queryLinks(page)).map(normalize);
-    await updateHostDataInCache(host, () => ({
-      count: links?.length,
-
-      links: links?.map((link) => ({
-        url: link,
-        scraped: false,
-      })),
-    }));
+async function getLinksForHost(page: Page, host: string, url: string) {
+  const cache = await getCache<HostData>(host, hostDataSchema);
+  if (cache && cache.links.length > 0) {
+    return await getLinksFromCache(host);
   }
+  const links = await getLinksFromPage(page, host, url);
+  await updateHostDataInCache(host, () => ({
+    count: links?.length,
+
+    links: links?.map((link) => ({
+      url: link,
+      scraped: false,
+    })),
+  }));
+
+  publishWebhook(
+    cache?.callbackUrl || "",
+    {
+      type: "links",
+      data: {
+        links,
+        host,
+      },
+    },
+    cache?.signSecret || ""
+  );
+  return links;
+}
+
+async function getLinksFromCache(host: string) {
+  const cache = await getCache<HostData>(host, hostDataSchema);
+  return cache?.links.map((link) => link.url) || [];
+}
+
+async function getLinksFromPage(page: Page, host: string, url: string) {
+  const links = (await queryLinks(page)).map(normalize);
+
   const filteredLinks = Array.from(
     new Set([...links.filter((link) => new URL(link).host === host), url])
   );
   return filteredLinks;
 }
 
-export async function exploreUrlsAndQueue(
-  passedUrl: string,
-  page: Page,
-  prompt: string,
-  passedHost: string,
-  callbackUrl: string,
-  signSecret: string,
-  passedLinks?: string[]
-) {
-  const url = normalize(passedUrl);
-  const parsedURL = new URL(url);
-  const host = passedHost || parsedURL.host;
+export async function exploreUrlsAndQueue(url: string, page: Page) {
+  const host = getHost(url);
 
   // Navigate the page to a URL
-  await page.goto(parsedURL.toString());
-  const links = await getLinksForHost(page, host, url, passedLinks);
-  if (!passedLinks || passedLinks.length === 0) {
-    await publishWebhook(
-      callbackUrl,
-      {
-        type: "links",
-        data: {
-          links,
-          host,
-        },
-      },
-      signSecret
-    );
-  }
+  await page.goto(url.toString());
+  await getLinksForHost(page, host, url);
+  
 
   const cachedData = await getCache<HostData>(host, hostDataSchema);
 
@@ -93,11 +91,6 @@ export async function exploreUrlsAndQueue(
       operations.push(
         publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
           url: link.url,
-          host,
-          links: cachedData?.links.map((url) => url.url),
-          prompt,
-          callbackUrl,
-          signSecret,
         })
       );
     });
@@ -169,7 +162,6 @@ export async function exploreUrlsAndQueue(
     operations.push(
       publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN!, {
         host,
-        prompt,
       })
     );
   }

@@ -5,6 +5,7 @@ import { scrapMessageSchema } from "@/schemas/scapMessage";
 import type { SQSEvent, Context, Callback } from "aws-lambda";
 import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
 import { updateHostDataInCache } from "@/utils/updateHostDataInCache";
+import { getHost } from "@/utils/get-host";
 
 export async function handler(
   event: SQSEvent,
@@ -12,17 +13,16 @@ export async function handler(
   done: Callback
 ) {
   event.Records.forEach(async (record) => {
-    const { url, prompt, host, callbackUrl, links, signSecret } =
+    const { url } =
       parseSNSMessegeInSQSRecord(record, scrapMessageSchema);
-    updateHostDataInCache(host, () => ({
-      stage: "explore",
-    }));
+    const host = getHost(url);
+   
     const cache = await getCache<HostData>(host, hostDataSchema);
     if (cache?.scraped) {
       return;
     }
     if (!cache?.links.find((link) => link.url === url)?.scraped) {
-      await explore(url, prompt, host, callbackUrl, signSecret, links);
+      await explore(url);
     }
   });
   done(null, {

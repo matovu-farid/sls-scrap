@@ -9,5 +9,6 @@ export const hostDataSchema = z.object({
   signSecret: z.string(),
   callbackUrl: z.string(),
   result: z.string().optional(),
+  prompt: z.string(),
 });
 export type HostData = z.infer<typeof hostDataSchema>;
