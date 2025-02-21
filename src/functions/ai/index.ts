@@ -2,10 +2,9 @@ import { aiMessageSchema } from "@/schemas/aiMessage";
 import { scrape } from "@/utils/scrape";
 import type { SQSEvent, Context, Callback } from "aws-lambda";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
-import { getCache } from "@/entites/cache";
+import { getCache, setCacheFor } from "@/entites/cache";
 import { publishWebhook } from "@/utils/publishWebhook";
 import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
-import { updateHostDataInCache } from "@/utils/updateHostDataInCache";
 
 export async function handler(
   event: SQSEvent,
@@ -23,17 +22,16 @@ export async function handler(
       return;
     }
 
-    updateHostDataInCache(host, () => ({
-      stage: "webhook",
-    }));
     const results = await scrape(host, cache.prompt);
     if (!cache || !results) {
       return;
     }
 
-    await updateHostDataInCache(host, () => ({
-      result: results,
-    }));
+    // await setCacheFor<HostData>(host)("$", true);
+
+    await setCacheFor<HostData>(host)("$.result", results);
+
+    await setCacheFor<HostData>(host)("$.stage", "ai");
 
     promises.push(
       publishWebhook(host, {

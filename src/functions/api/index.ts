@@ -1,11 +1,10 @@
-import { normalize } from "@/utils/normalize";
-import { delCache } from "@/entites/cache";
+import { delCache,  setCacheFor } from "@/entites/cache";
 import { ScrapMessage } from "@/schemas/scapMessage";
 import { apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 import { publish } from "@/entites/sns";
-import { updateHostDataInCache } from "@/utils/updateHostDataInCache";
 import { getHost } from "@/utils/get-host";
+import { HostData } from "@/schemas/hostdata";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -24,14 +23,21 @@ export const handler = async (
   }
   const { url, prompt, callbackUrl } = result.data;
 
-
   const host = getHost(url);
-  await delCache(host);
-  await updateHostDataInCache(host, () => ({
+  await delCache<HostData>(host);
+ 
+  await setCacheFor<HostData>(host)("$", {
+    links: [],
+    scrapedLinks: [],
+    scraped: false,
     signSecret,
     callbackUrl,
     prompt,
-  }));
+    stage: "api",
+    found: 0,
+    explored: 0,
+    result: "",
+  });
   await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
     url: url,
   });
