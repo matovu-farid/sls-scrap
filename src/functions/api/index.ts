@@ -1,10 +1,9 @@
-import { delCache, redis } from "@/entites/cache";
+import { redis } from "@/entites/cache";
 import { ScrapMessage } from "@/schemas/scapMessage";
 import { apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 import { publish } from "@/entites/sns";
 import { getHost } from "@/utils/get-host";
-import { HostData } from "@/schemas/hostdata";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
