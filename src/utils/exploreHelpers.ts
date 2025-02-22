@@ -28,15 +28,14 @@ export async function getLinksForHost(page: Page, host: string, url: string) {
   console.log(">>> Updating host data in cache");
 
   for (const link of links) {
+    await redis.sadd(`${host}-links`, JSON.stringify(link));
     if (link === url) continue;
     await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
       url: link,
     });
-    await redis.sadd(`${host}-links`, JSON.stringify(link));
   }
 
-
-  await redis.hset(host, {found: links.length})
+  await redis.hset(host, { found: links.length });
 
   console.log(">>> Publishing webhook");
   await publishWebhook(host, {
@@ -48,8 +47,6 @@ export async function getLinksForHost(page: Page, host: string, url: string) {
   });
   return links;
 }
-
-
 
 async function getLinksFromPage(page: Page, host: string, url: string) {
   const links = (await queryLinks(page)).map(normalize);

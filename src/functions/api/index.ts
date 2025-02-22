@@ -23,20 +23,27 @@ export const handler = async (
   const { url, prompt, callbackUrl } = result.data;
 
   const host = getHost(url);
+  await Promise.all([
+    redis.del(host),
+    redis.del(`${host}-links`),
+    redis.del(`${host}-scrapedLinks`),
+  ]);
 
-  await redis.hset(host, {
-    scraped: false,
-    signSecret,
-    callbackUrl,
-    prompt,
-    stage: "api",
-    found: 0,
-    explored: 0,
-    result: "",
-  });
-  await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
-    url: url,
-  });
+  await Promise.allSettled([
+    redis.hset(host, {
+      scraped: false,
+      signSecret,
+      callbackUrl,
+      prompt,
+      stage: "api",
+      found: 0,
+      explored: 0,
+      result: "",
+    }),
+    publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
+      url: url,
+    }),
+  ]);
 
   done(null, {
     statusCode: 200,
