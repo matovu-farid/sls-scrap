@@ -18,7 +18,7 @@ export async function handler(
     } = parseSNSMessegeInSQSRecord(record, webHookSchema);
     promises.push(
       axios.post(webhook, webHookData, { headers }).then((response) => {
-        console.log(response);
+        console.log(response.status);
       })
     );
   });
