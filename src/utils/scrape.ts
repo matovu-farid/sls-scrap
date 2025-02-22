@@ -25,6 +25,5 @@ export const scrape = async (host: string, prompt: string) => {
   });
   await setData(`scraped-data/${getS3Key(host)}`, text);
 
-
   return text;
 };

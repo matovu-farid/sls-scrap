@@ -24,6 +24,10 @@ export async function handler(
       return;
     }
 
+    await redis.hset(host, {
+      stage: "explore",
+    });
+
     if (!(await redis.sismember(`${host}-scrapedLinks`, url))) {
       await explore(url);
     }

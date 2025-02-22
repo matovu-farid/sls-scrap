@@ -1,17 +1,8 @@
-
-import { getCache, redis } from "@/entites/cache";
+import { redis } from "@/entites/cache";
 import { getData, getS3Key } from "@/entites/s3";
-import { hostDataSchema } from "@/schemas/hostdata";
-
 
 export async function getContent(host: string) {
-  if (typeof host !== "string") return "";
-  const hostData = await getCache(host, hostDataSchema);
-  if (!hostData) {
-    return null;
-  }
-
-  const links = await redis.smembers(`${host}-links`);
+  const links = await redis.smembers(`${host}-scrapedLinks`);
 
   const content: Record<string, string> = {};
   for (const link of links) {

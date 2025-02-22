@@ -8,7 +8,7 @@ export async function handler(
   context: Context,
   done: Callback
 ) {
-  console.log(event);
+  console.log(">>> Webhooks processing started");
   const promises: Promise<any>[] = [];
   event.Records.forEach(async (record: any) => {
     const {
@@ -23,5 +23,6 @@ export async function handler(
     );
   });
   await Promise.allSettled(promises);
+  console.log(">>> Webhooks processing done");
   done(null, "Success");
 }

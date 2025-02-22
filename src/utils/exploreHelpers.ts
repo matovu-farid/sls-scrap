@@ -18,14 +18,11 @@ const queryLinks = async (page: Page) => {
 
 export async function getLinksForHost(page: Page, host: string, url: string) {
   const cache = await getCache<HostData>(host, hostDataSchema);
-  console.log("cache", cache);
   if (await redis.scard(`${host}-links`)) {
     return await redis.smembers(`${host}-links`);
   }
   console.log(">>> Querying links from page");
   const links = await getLinksFromPage(page, host, url);
-  console.log(">>> Links from page", links);
-  console.log(">>> Updating host data in cache");
 
   for (const link of links) {
     await redis.sadd(`${host}-links`, JSON.stringify(link));
@@ -50,7 +47,6 @@ export async function getLinksForHost(page: Page, host: string, url: string) {
 
 async function getLinksFromPage(page: Page, host: string, url: string) {
   const links = (await queryLinks(page)).map(normalize);
-  console.log(">>>All Links from page", host, links);
 
   const filteredLinks = Array.from(
     new Set([...links.filter((link) => new URL(link).host === host), url])

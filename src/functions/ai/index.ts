@@ -12,29 +12,31 @@ export async function handler(
   done: Callback
 ) {
   const promises: Promise<any>[] = [];
+  console.log(">>> AI processing started");
 
   event.Records.forEach(async (record: any) => {
     const { host } = parseSNSMessegeInSQSRecord(record, aiMessageSchema);
 
     const cache = await getCache<HostData>(host, hostDataSchema);
 
+    await redis.hset(host, {
+      stage: "ai",
+    });
+
     if (!cache) {
       return;
     }
 
     const results = await scrape(host, cache.prompt);
+
     if (!cache || !results) {
       return;
     }
 
-    await redis.hset(host, {
-      result: results,
-      stage: "ai",
-    });
-
-
-
     promises.push(
+      redis.hset(host, {
+        result: results,
+      }),
       publishWebhook(host, {
         type: "scraped",
         data: {
@@ -46,6 +48,7 @@ export async function handler(
   });
 
   await Promise.allSettled(promises);
+  console.log(">>> AI processing done");
   done(null, {
     statusCode: 200,
     body: "Success",

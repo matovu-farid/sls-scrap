@@ -9,7 +9,6 @@ export async function explore(url: string) {
   const page = await browser.newPage();
   await page.goto(url.toString());
   await getLinksForHost(page, getHost(url), url);
-  console.log("getLinksForHost done");
 
   await exploreUrlsAndQueue(url, page);
   browser.close();
