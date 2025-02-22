@@ -1,4 +1,4 @@
-import { delCache,  setCacheFor } from "@/entites/cache";
+import { delCache, redis } from "@/entites/cache";
 import { ScrapMessage } from "@/schemas/scapMessage";
 import { apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
@@ -24,9 +24,8 @@ export const handler = async (
   const { url, prompt, callbackUrl } = result.data;
 
   const host = getHost(url);
-  await delCache<HostData>(host);
- 
-  await setCacheFor<HostData>(host)("$", {
+
+  await redis.hset(host, {
     scraped: false,
     signSecret,
     callbackUrl,

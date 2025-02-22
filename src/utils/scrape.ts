@@ -1,9 +1,7 @@
 import { generateText } from "ai";
 import { getS3Key, setData } from "@/entites/s3";
 import { openai } from "@ai-sdk/openai";
-import { publish } from "@/entites/sns";
 import { getContent } from "@/utils/content";
-import type { ScrapResult } from "@/schemas/scrapResult";
 
 export const scrape = async (host: string, prompt: string) => {
   const content = await getContent(host);

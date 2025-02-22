@@ -2,7 +2,7 @@ import { aiMessageSchema } from "@/schemas/aiMessage";
 import { scrape } from "@/utils/scrape";
 import type { SQSEvent, Context, Callback } from "aws-lambda";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
-import { getCache, setCacheFor } from "@/entites/cache";
+import { getCache, redis } from "@/entites/cache";
 import { publishWebhook } from "@/utils/publishWebhook";
 import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
 
@@ -27,11 +27,12 @@ export async function handler(
       return;
     }
 
-    // await setCacheFor<HostData>(host)("$", true);
+    await redis.hset(host, {
+      result: results,
+      stage: "ai",
+    });
 
-    await setCacheFor<HostData>(host)("$.result", results);
 
-    await setCacheFor<HostData>(host)("$.stage", "ai");
 
     promises.push(
       publishWebhook(host, {

@@ -13,4 +13,3 @@ export const hostDataSchema = z.object({
 });
 export type HostData = z.infer<typeof hostDataSchema>;
 
-// export type HostPaths = Exclude<JSONPaths<HostData>, undefined>;

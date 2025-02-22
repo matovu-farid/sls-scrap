@@ -38,7 +38,7 @@ type ValueType<T, P extends Pathtype<T>> = P extends "$"
   ? T[R]
   : never;
 
-export function setCacheFor<T>(key: string) {
+function setCacheFor<T>(key: string) {
   return function <P extends Pathtype<T>>(
     path: P,
     value: NonNullable<ValueType<T, P>>
@@ -46,12 +46,8 @@ export function setCacheFor<T>(key: string) {
     return redis.json.set(key, path, value);
   };
 }
-export const incrementCacheFor =
-  <T>(key: string, value = 1) =>
-  <P extends NumberKeysType<T>>(path: P) =>
-    redis.json.numincrby(key, path, value);
 
-export const appendCacheFor =
+const appendCacheFor =
   <T>(key: string) =>
   <P extends Pathtype<T>>(
     path: P,
@@ -59,12 +55,8 @@ export const appendCacheFor =
   ) =>
     redis.json.arrappend(key, path, value);
 
-export const getCache = async <T>(
-  key: string,
-  schema: z.ZodSchema<T>,
-  path: string = "$"
-) => {
-  const data = await redis.json.get(key, path);
+export const getCache = async <T>(key: string, schema: z.ZodSchema<T>) => {
+  const data = await redis.hgetall(key);
 
   const result = schema.safeParse(data);
   if (!result.success) {
@@ -73,6 +65,6 @@ export const getCache = async <T>(
   return result.data;
 };
 
-export async function delCache<T>(key: string, path: Pathtype<T> = "$") {
-  return redis.json.del(key, path);
+export async function delCache<T>(key: string, field: string) {
+  return redis.hdel(key, field);
 }

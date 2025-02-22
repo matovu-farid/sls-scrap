@@ -1,13 +1,7 @@
 import type { Page } from "puppeteer-core";
 
 import { getS3Key, setData } from "@/entites/s3";
-import {
-  appendCacheFor,
-  getCache,
-  incrementCacheFor,
-  redis,
-  setCacheFor,
-} from "@/entites/cache";
+import { getCache, redis } from "@/entites/cache";
 import { normalize } from "@/utils/normalize";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { publish } from "@/entites/sns";
@@ -42,7 +36,7 @@ export async function getLinksForHost(page: Page, host: string, url: string) {
   }
 
 
-  await setCacheFor<HostData>(host)("$.found", links.length);
+  await redis.hset(host, {found: links.length})
 
   console.log(">>> Publishing webhook");
   await publishWebhook(host, {
@@ -85,7 +79,7 @@ export async function exploreUrlsAndQueue(url: string, page: Page) {
   console.log({ textContent });
 
   await redis.sadd(`${host}-scrapedLinks`, JSON.stringify(url));
-  await incrementCacheFor<HostData>(host, 1)("$.explored");
+  await redis.hincrby(host, "explored", 1);
 
   await setData(`url-data/${getS3Key(url)}`, textContent);
 
