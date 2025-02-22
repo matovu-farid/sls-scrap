@@ -73,19 +73,26 @@ export async function exploreUrlsAndQueue(url: string, page: Page) {
     );
   });
 
-  console.log({ textContent });
-
-  await redis.sadd(`${host}-scrapedLinks`, JSON.stringify(url));
-  await redis.hincrby(host, "explored", 1);
-
-  await setData(`url-data/${getS3Key(url)}`, textContent);
+  await Promise.all([
+    redis
+      .multi()
+      .sadd(`${host}-scrapedLinks`, JSON.stringify(url))
+      .hincrby(host, "explored", 1)
+      .exec(),
+    setData(`url-data/${getS3Key(url)}`, textContent),
+  ]);
 
   // TODO: Make sure the message is sent to ai when explored === count
 
   const cache = await getCache<HostData>(host, hostDataSchema);
-  if (cache?.scraped) {
-    await publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN!, {
-      host,
-    });
+  if (cache?.explored === cache?.found) {
+    await Promise.allSettled([
+      publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN!, {
+        host,
+      }),
+      redis.hset(host, {
+        scraped: true,
+      }),
+    ]);
   }
 }
