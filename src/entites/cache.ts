@@ -23,10 +23,8 @@ const test = {
   d: [1],
 };
 type KeysWithNumbers<T> = Pick<T, PickNumberKeys<T>>;
- 
 
 export type NumberKeysType<T> = JSONPaths<KeysWithNumbers<T>>;
-
 
 export type Pathtype<T> = (string & Exclude<JSONPaths<T>, undefined>) | "$";
 
@@ -55,7 +53,10 @@ export const incrementCacheFor =
 
 export const appendCacheFor =
   <T>(key: string) =>
-  <P extends Pathtype<T>>(path: P, value: NonNullable<ValueType<T, P>> extends Array<infer U> ? U : never) =>
+  <P extends Pathtype<T>>(
+    path: P,
+    value: NonNullable<ValueType<T, P>> extends Array<infer U> ? U : never
+  ) =>
     redis.json.arrappend(key, path, value);
 
 export const getCache = async <T>(

@@ -3,8 +3,6 @@ import { z } from "zod";
 export const hostDataSchema = z.object({
   stage: z.enum(["explore", "ai", "webhook", "api"]),
 
-  links: z.array(z.string()),
-  scrapedLinks: z.array(z.string()),
   scraped: z.boolean(),
   signSecret: z.string(),
   callbackUrl: z.string(),

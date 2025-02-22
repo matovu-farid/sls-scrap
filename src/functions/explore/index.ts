@@ -1,4 +1,4 @@
-import { getCache } from "@/entites/cache";
+import { getCache, redis } from "@/entites/cache";
 import { explore } from "../../utils/explore";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { scrapMessageSchema } from "@/schemas/scapMessage";
@@ -23,9 +23,8 @@ export async function handler(
       });
       return;
     }
-    const link = cache?.scrapedLinks.find((link) => link === url);
 
-    if (!link) {
+    if (!(await redis.sismember(`${host}-scrapedLinks`, url))) {
       await explore(url);
     }
   });

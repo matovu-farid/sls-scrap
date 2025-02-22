@@ -1,7 +1,13 @@
 import type { Page } from "puppeteer-core";
 
 import { getS3Key, setData } from "@/entites/s3";
-import { appendCacheFor, getCache, incrementCacheFor, setCacheFor } from "@/entites/cache";
+import {
+  appendCacheFor,
+  getCache,
+  incrementCacheFor,
+  redis,
+  setCacheFor,
+} from "@/entites/cache";
 import { normalize } from "@/utils/normalize";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { publish } from "@/entites/sns";
@@ -19,15 +25,23 @@ const queryLinks = async (page: Page) => {
 export async function getLinksForHost(page: Page, host: string, url: string) {
   const cache = await getCache<HostData>(host, hostDataSchema);
   console.log("cache", cache);
-  if (cache && cache.links.length > 0) {
-    return await getLinksFromCache(host);
+  if (await redis.scard(`${host}-links`)) {
+    return await redis.smembers(`${host}-links`);
   }
   console.log(">>> Querying links from page");
   const links = await getLinksFromPage(page, host, url);
   console.log(">>> Links from page", links);
   console.log(">>> Updating host data in cache");
 
-  await setCacheFor<HostData>(host)("$.links", links);
+  for (const link of links) {
+    if (link === url) continue;
+    await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
+      url: link,
+    });
+    await redis.sadd(`${host}-links`, JSON.stringify(link));
+  }
+
+
   await setCacheFor<HostData>(host)("$.found", links.length);
 
   console.log(">>> Publishing webhook");
@@ -41,10 +55,7 @@ export async function getLinksForHost(page: Page, host: string, url: string) {
   return links;
 }
 
-async function getLinksFromCache(host: string) {
-  const cache = await getCache<HostData>(host, hostDataSchema);
-  return cache?.links || [];
-}
+
 
 async function getLinksFromPage(page: Page, host: string, url: string) {
   const links = (await queryLinks(page)).map(normalize);
@@ -61,8 +72,6 @@ export async function exploreUrlsAndQueue(url: string, page: Page) {
 
   // Navigate the page to a URL
 
-  const cachedData = await getCache<HostData>(host, hostDataSchema);
-
   const textContent = await page.evaluate(() => {
     return (
       //@ts-ignore
@@ -73,24 +82,14 @@ export async function exploreUrlsAndQueue(url: string, page: Page) {
     );
   });
 
-  await appendCacheFor<HostData>(host)("$.scrapedLinks", url);
-  await incrementCacheFor<HostData>(host )("$.explored");
+  console.log({ textContent });
+
+  await redis.sadd(`${host}-scrapedLinks`, JSON.stringify(url));
+  await incrementCacheFor<HostData>(host, 1)("$.explored");
 
   await setData(`url-data/${getS3Key(url)}`, textContent);
 
-  if (cachedData?.links) {
-    for (const link of cachedData.links) {
-      if (!cachedData.scrapedLinks || !cachedData.scrapedLinks.includes(link)) {
-        await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
-          url: link,
-        });
-      }
-    }
-  }
-
-  const scrapedLinks = [...(cachedData?.scrapedLinks || []), url];
-
-
+  // TODO: Make sure the message is sent to ai when explored === count
 
   const cache = await getCache<HostData>(host, hostDataSchema);
   if (cache?.scraped) {

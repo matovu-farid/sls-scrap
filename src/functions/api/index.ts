@@ -27,8 +27,6 @@ export const handler = async (
   await delCache<HostData>(host);
  
   await setCacheFor<HostData>(host)("$", {
-    links: [],
-    scrapedLinks: [],
     scraped: false,
     signSecret,
     callbackUrl,
