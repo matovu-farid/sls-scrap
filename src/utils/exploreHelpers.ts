@@ -17,7 +17,6 @@ const queryLinks = async (page: Page) => {
 };
 
 export async function getLinksForHost(page: Page, host: string, url: string) {
-  const cache = await getCache<HostData>(host, hostDataSchema);
   if (await redis.scard(`${host}-links`)) {
     return await redis.smembers(`${host}-links`);
   }
