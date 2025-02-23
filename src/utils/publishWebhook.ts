@@ -11,12 +11,8 @@ import { getCache } from "@/entites/cache";
  * @param headers - The headers to publish
  */
 
-export async function publishWebhook(
-  host: string,
-  data: WebHookEventData,
-  
-) {
-  const timestamp = new Date().toISOString();
+export async function publishWebhook(host: string, data: WebHookEventData) {
+  const timestamp = Date.now().toString();
   const cache = await getCache<HostData>(host, hostDataSchema);
   if (!cache) {
     return;
