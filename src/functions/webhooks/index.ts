@@ -22,7 +22,11 @@ export async function handler(
       })
     );
   });
-  await Promise.allSettled(promises);
+  try {
+    await Promise.allSettled(promises);
+  } catch (error) {
+    console.log(">>> Webhooks processing error", error);
+  }
   console.log(">>> Webhooks processing done");
   done(null, "Success");
 }

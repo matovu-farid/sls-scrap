@@ -17,7 +17,11 @@ export async function publishWebhook(host: string, data: WebHookEventData) {
   if (!cache) {
     return;
   }
-  const signature = getSigniture(data, cache.signSecret, timestamp);
+  const signature = getSigniture(
+    JSON.stringify(data),
+    cache.signSecret,
+    timestamp
+  );
   const webhookEvent = {
     webhook: cache.callbackUrl,
     data,
