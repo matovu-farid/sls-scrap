@@ -30,7 +30,7 @@ export const exploreSchema = z.object({
 export type LinksEventData = z.infer<typeof linksSchema>;
 export type ScrapedEventData = z.infer<typeof scrapedSchema>;
 export type ExploreEventData = z.infer<typeof exploreSchema>;
-export const webHookSchemaEventData = z.union([
+export const webHookSchemaEventData = z.discriminatedUnion("type", [
   exploreSchema,
   linksSchema,
   scrapedSchema,
