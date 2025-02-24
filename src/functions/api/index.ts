@@ -23,11 +23,11 @@ export const handler = async (
   const { url, prompt, callbackUrl, id } = result.data;
 
   const host = getHost(url);
-  await Promise.all([
-    redis.del(host),
-    redis.del(`${host}-links`),
-    redis.del(`${host}-scrapedLinks`),
-  ]);
+  await redis.multi()
+  .del(host)
+  .del(`${host}-links`)
+  .del(`${host}-scrapedLinks`)
+  .exec();
 
   await Promise.allSettled([
     redis.hset(host, {

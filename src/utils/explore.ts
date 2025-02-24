@@ -3,7 +3,7 @@ import { exploreUrlsAndQueue, getLinksForHost } from "@/utils/exploreHelpers";
 import { getBrowser } from "@/utils/getBrowser";
 import { getHost } from "./get-host";
 import { publishWebhook } from "./publishWebhook";
-import { getCache, redis } from "@/entites/cache";
+import { getCache } from "@/entites/cache";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 
 export async function explore(url: string) {
