@@ -20,7 +20,7 @@ export const handler = async (
       body: "Invalid request, missing url, prompt or callbackUrl",
     };
   }
-  const { url, prompt, callbackUrl } = result.data;
+  const { url, prompt, callbackUrl, id } = result.data;
 
   const host = getHost(url);
   await Promise.all([
@@ -39,6 +39,7 @@ export const handler = async (
       found: 0,
       explored: 0,
       result: "",
+      id,
     }),
     publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
       url: url,

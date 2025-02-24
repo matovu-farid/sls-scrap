@@ -32,12 +32,14 @@ export async function handler(
     if (!cache || !results) {
       return;
     }
+    const id = ((await redis.hget(host, "id")) as string) || "";
 
     promises.push(
       redis.hset(host, {
         result: results,
       }),
       publishWebhook(host, {
+        id,
         type: "scraped",
         data: {
           url: host,

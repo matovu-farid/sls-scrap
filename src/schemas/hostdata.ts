@@ -10,6 +10,7 @@ export const hostDataSchema = z.object({
   prompt: z.string(),
   found: z.number(),
   explored: z.number(),
+  id: z.string(),
 });
 export type HostData = z.infer<typeof hostDataSchema>;
 

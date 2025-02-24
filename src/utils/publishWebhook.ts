@@ -1,8 +1,8 @@
 import type { WebHookEvent, WebHookEventData } from "@/utils/webHooks";
 import { publish } from "@/entites/sns";
-import { getSigniture } from "@/utils/getSigniture";
+import { getSigniture, hash } from "@/utils/getSigniture";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
-import { getCache } from "@/entites/cache";
+import { getCache, redis } from "@/entites/cache";
 
 /**
  * Publish a webhook event to the SNS topic
@@ -17,11 +17,8 @@ export async function publishWebhook(host: string, data: WebHookEventData) {
   if (!cache) {
     return;
   }
-  const signature = getSigniture(
-    JSON.stringify(data),
-    cache.signSecret,
-    timestamp
-  );
+  const signature = getSigniture(data, cache.signSecret, timestamp);
+  const id = ((await redis.hget(host, "id")) as string) || "";
   const webhookEvent = {
     webhook: cache.callbackUrl,
     data,
@@ -29,7 +26,9 @@ export async function publishWebhook(host: string, data: WebHookEventData) {
       "Content-Type": "application/json",
       "x-webhook-signature": signature,
       "x-webhook-timestamp": timestamp,
+      "x-webhook-hash": hash(data),
     },
+    id,
   } as WebHookEvent;
   await publish<WebHookEvent>(process.env.WEBHOOK_TOPIC_ARN!, webhookEvent);
 }

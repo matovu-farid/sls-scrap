@@ -33,8 +33,11 @@ export async function getLinksForHost(page: Page, host: string, url: string) {
 
   await redis.hset(host, { found: links.length });
 
+  const id = ((await redis.hget(host, "id")) as string) || "";
+
   console.log(">>> Publishing webhook");
   await publishWebhook(host, {
+    id,
     type: "links",
     data: {
       links,
