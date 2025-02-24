@@ -7,26 +7,22 @@ import { getCache } from "@/entites/cache";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 
 export async function explore(url: string) {
-  
   const browser = await getBrowser();
 
   const page = await browser.newPage();
   await page.goto(url.toString());
   await getLinksForHost(page, getHost(url), url);
+
+  await exploreUrlsAndQueue(url, page);
   const cache = await getCache<HostData>(getHost(url), hostDataSchema);
-  
-
-
-  await Promise.allSettled([ exploreUrlsAndQueue(url, page),
-    publishWebhook(getHost(url), {
-      id: cache?.id || "",
-      type: "explore",
-      data: {
-        url,
-        explored: cache?.explored || 0,
-        found: cache?.found || 0,
-      },
-    }),
-  ]);
-  browser.close();
+  await publishWebhook(getHost(url), {
+    id: cache?.id || "",
+    type: "explore",
+    data: {
+      url,
+      explored: cache?.explored || 0,
+      found: cache?.found || 0,
+    },
+  }),
+    browser.close();
 }
