@@ -1,4 +1,4 @@
-import { generateText } from "ai";
+import { generateText, generateObject, Schema } from "ai";
 import { getS3Key, setData } from "@/entites/s3";
 import { openai } from "@ai-sdk/openai";
 import { getContent } from "@/utils/content";
@@ -26,4 +26,34 @@ export const scrape = async (host: string, prompt: string) => {
   await setData(`scraped-data/${getS3Key(host)}`, text);
 
   return text;
+};
+
+export const scrapeStructured = async <T>(
+  host: string,
+  prompt: string,
+  schema: Schema<T>
+): Promise<string | null> => {
+  const content = await getContent(host);
+
+  if (!content) {
+    return null;
+  }
+
+  const textData = JSON.stringify(content);
+
+  const data = await generateObject<T>({
+    model: openai("gpt-4o-mini"),
+    schema,
+    system:
+      "You are provided with a list of urls and their content. You are to extract the key details from the content that match the provided schema.",
+    prompt: `<Prompt>
+        ${prompt}
+        </Prompt>
+        <Details>
+        ${textData}
+        </Details>`,
+  });
+
+  await setData(`scraped-structured/${getS3Key(host)}`, JSON.stringify(data));
+  return JSON.stringify(data.object);
 };

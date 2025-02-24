@@ -1,5 +1,5 @@
 import { aiMessageSchema } from "@/schemas/aiMessage";
-import { scrape } from "@/utils/scrape";
+import { scrape, scrapeStructured } from "@/utils/scrape";
 import type { SQSEvent, Context, Callback } from "aws-lambda";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { getCache, redis } from "@/entites/cache";
@@ -26,8 +26,12 @@ export async function handler(
     if (!cache) {
       return;
     }
-
-    const results = await scrape(host, cache.prompt);
+    let results: string | null = "";
+    if (cache.type === "text") {
+      results = await scrape(host, cache.prompt);
+    } else {
+      results = await scrapeStructured(host, cache.prompt, cache.schema);
+    }
 
     if (!cache || !results) {
       return;

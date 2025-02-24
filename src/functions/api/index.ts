@@ -20,7 +20,7 @@ export const handler = async (
       body: "Invalid request, missing url, prompt or callbackUrl",
     };
   }
-  const { url, prompt, callbackUrl, id } = result.data;
+  const { url, prompt, callbackUrl, id, type} = result.data;
 
   const host = getHost(url);
   await redis.multi()
@@ -40,6 +40,7 @@ export const handler = async (
       explored: 0,
       result: "",
       id,
+      type,
     }),
     publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
       url: url,

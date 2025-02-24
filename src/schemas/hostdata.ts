@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const hostDataSchema = z.object({
+export const baseHostDataSchema = z.object({
   stage: z.enum(["explore", "ai", "webhook", "api"]),
 
   scraped: z.boolean(),
@@ -12,5 +12,16 @@ export const hostDataSchema = z.object({
   explored: z.number(),
   id: z.string(),
 });
-export type HostData = z.infer<typeof hostDataSchema>;
+const textHostDataSchema = baseHostDataSchema.extend({
+  type: z.literal("text"),
+});
+const structuredHostDataSchema = baseHostDataSchema.extend({
+  type: z.literal("structured"),
+  schema: z.any(),
+});
 
+export const hostDataSchema = z.discriminatedUnion("type", [
+  textHostDataSchema,
+  structuredHostDataSchema,
+]);
+export type HostData = z.infer<typeof hostDataSchema>;

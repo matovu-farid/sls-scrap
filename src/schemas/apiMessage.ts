@@ -5,6 +5,7 @@ export const apiMessageSchema = z.object({
   prompt: z.string(),
   callbackUrl: z.string(),
   id: z.string().optional(),
+  type: z.enum(["text", "structured"]),
 });
 
 export type ApiMessage = z.infer<typeof apiMessageSchema>;
