@@ -22,6 +22,8 @@ export const exploreSchema = z.object({
   type: z.literal("explore"),
   data: z.object({
     url: z.string(),
+    explored: z.number(),
+    found: z.number(),
   }),
   id: z.string(),
 });
