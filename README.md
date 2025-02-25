@@ -18,13 +18,6 @@ A backend service that handles webhooks, API endpoints, and PDF conversion funct
 - Secure API authentication
 - Structured response formats
 
-### Document Conversion
-
-- Markdown to PDF conversion utility
-- Custom formatting options
-- Support for various markdown syntax
-- PDF output customization
-
 ### Data Exploration
 
 - Advanced data querying capabilities
