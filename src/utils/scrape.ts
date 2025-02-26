@@ -3,8 +3,8 @@ import { getS3Key, setData } from "@/entites/s3";
 import { openai } from "@ai-sdk/openai";
 import { getContent } from "@/utils/content";
 
-export const scrape = async (host: string, prompt: string) => {
-  const content = await getContent(host);
+export const scrape = async (cacheKey: string, prompt: string) => {
+  const content = await getContent(cacheKey);
   console.log(">>> content", content);
 
   if (!content) {
@@ -25,17 +25,17 @@ export const scrape = async (host: string, prompt: string) => {
       </Details>`,
   });
   console.log(">>> text", text);
-  await setData(`scraped-data/${getS3Key(host)}`, text);
+  await setData(`scraped-data/${getS3Key(cacheKey, cacheKey)}`, text);
 
   return text;
 };
 
 export const scrapeStructured = async <T>(
-  host: string,
+  cacheKey: string,
   prompt: string,
   passedSchema: any
 ): Promise<string | null> => {
-  const content = await getContent(host);
+  const content = await getContent(cacheKey);
 
   if (!content) {
     return null;
@@ -57,6 +57,6 @@ export const scrapeStructured = async <T>(
         </Details>`,
   });
 
-  await setData(`scraped-structured/${getS3Key(host)}`, JSON.stringify(data));
+  await setData(`scraped-structured/${getS3Key(cacheKey, cacheKey)}`, JSON.stringify(data));
   return JSON.stringify(data.object);
 };

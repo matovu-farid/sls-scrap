@@ -7,7 +7,6 @@ import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { publish } from "@/entites/sns";
 import type { AiMessage } from "@/schemas/aiMessage";
 import { publishWebhook } from "@/utils/publishWebhook";
-import { getHost } from "./get-host";
 import { ScrapMessage } from "@/schemas/scapMessage";
 import { z } from "zod";
 
@@ -17,27 +16,33 @@ const queryLinks = async (page: Page) => {
   });
 };
 
-export async function getLinksForHost(page: Page, host: string, url: string) {
-  if (await redis.scard(`${host}-links`)) {
-    return await redis.smembers(`${host}-links`);
+export async function getLinksForHost(
+  page: Page,
+  host: string,
+  url: string,
+  cacheKey: string
+) {
+  if (await redis.scard(`${cacheKey}-links`)) {
+    return await redis.smembers(`${cacheKey}-links`);
   }
   console.log(">>> Querying links from page");
   const links = await getLinksFromPage(page, host, url);
 
   for (const link of links) {
-    await redis.sadd(`${host}-links`, JSON.stringify(link));
+    await redis.sadd(`${cacheKey}-links`, JSON.stringify(link));
     if (link === url) continue;
     await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
       url: link,
+      cacheKey,
     });
   }
 
-  await redis.hset(host, { found: links.length });
+  await redis.hset(cacheKey, { found: links.length });
 
-  const id = ((await redis.hget(host, "id")) as string) || "";
+  const id = ((await redis.hget(cacheKey, "id")) as string) || "";
 
   console.log(">>> Publishing webhook");
-  await publishWebhook(host, {
+  await publishWebhook(cacheKey, {
     id,
     type: "links",
     data: {
@@ -62,9 +67,11 @@ async function getLinksFromPage(page: Page, host: string, url: string) {
   return Array.from(new Set([...links, url]));
 }
 
-export async function exploreUrlsAndQueue(url: string, page: Page) {
-  const host = getHost(url);
-
+export async function exploreUrlsAndQueue(
+  url: string,
+  page: Page,
+  cacheKey: string
+) {
   // Navigate the page to a URL
 
   const textContent = await page.evaluate(() => {
@@ -80,21 +87,21 @@ export async function exploreUrlsAndQueue(url: string, page: Page) {
   await Promise.all([
     redis
       .multi()
-      .sadd(`${host}-scrapedLinks`, JSON.stringify(url))
-      .hincrby(host, "explored", 1)
+      .sadd(`${cacheKey}-scrapedLinks`, JSON.stringify(url))
+      .hincrby(cacheKey, "explored", 1)
       .exec(),
-    setData(`url-data/${getS3Key(url)}`, textContent),
+    setData(`url-data/${getS3Key(url, cacheKey)}`, textContent),
   ]);
 
   // TODO: Make sure the message is sent to ai when explored === count
 
-  const cache = await getCache<HostData>(host, hostDataSchema);
+  const cache = await getCache<HostData>(cacheKey, hostDataSchema);
   if (cache?.explored === cache?.found) {
     await Promise.allSettled([
       publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN!, {
-        host,
+        cacheKey,
       }),
-      redis.hset(host, {
+      redis.hset(cacheKey, {
         scraped: true,
       }),
     ]);

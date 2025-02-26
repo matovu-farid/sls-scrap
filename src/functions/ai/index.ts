@@ -1,7 +1,7 @@
 import { aiMessageSchema } from "@/schemas/aiMessage";
 import { scrape, scrapeStructured } from "@/utils/scrape";
 import type { SQSEvent, Context, Callback } from "aws-lambda";
-import { HostData, hostDataSchema } from "@/schemas/hostdata";
+import { HostData } from "@/schemas/hostdata";
 import { getCache, redis } from "@/entites/cache";
 import { publishWebhook } from "@/utils/publishWebhook";
 import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
@@ -16,43 +16,43 @@ export async function handler(
   console.log(">>> AI processing started");
 
   event.Records.forEach(async (record: any) => {
-    const { host } = parseSNSMessegeInSQSRecord(record, aiMessageSchema);
+    const { cacheKey } = parseSNSMessegeInSQSRecord(record, aiMessageSchema);
 
     const cache = await redis.hmget<Pick<HostData, "prompt" | "type">>(
-      host,
+      cacheKey,
       "prompt",
       "type"
     );
 
-    const schema = await redis.json.get(`${host}-schema`);
+    const schema = await redis.json.get(`${cacheKey}-schema`);
     assert.ok(cache, ">>> Cache is required for scraping");
 
-    await redis.hset(host, {
+    await redis.hset(cacheKey, {
       stage: "ai",
     });
 
     let results: string = "";
     if (cache.type === "text") {
-      results = (await scrape(host, cache.prompt)) || "";
+      results = (await scrape(cacheKey, cache.prompt)) || "";
     } else {
       assert.ok(schema, ">>> Schema is required for structured scraping");
-      results = (await scrapeStructured(host, cache.prompt, schema)) || "";
+      results = (await scrapeStructured(cacheKey, cache.prompt, schema)) || "";
     }
 
     if (!cache || !results) {
       return;
     }
-    const id = ((await redis.hget(host, "id")) as string) || "";
+    const id = ((await redis.hget(cacheKey, "id")) as string) || "";
 
     promises.push(
-      redis.hset(host, {
+      redis.hset(cacheKey, {
         result: results,
       }),
-      publishWebhook(host, {
+      publishWebhook(cacheKey, {
         id,
         type: "scraped",
         data: {
-          url: host,
+          url: cacheKey,
           results,
         },
       })

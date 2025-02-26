@@ -4,8 +4,8 @@ import { ApiMessage, apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 import { publish } from "@/entites/sns";
 import { getHost } from "@/utils/get-host";
-import { HostData } from "@/schemas/hostdata";
 import assert from "node:assert";
+import { createCacheKey } from "@/utils/cacheKey";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -27,11 +27,12 @@ export const handler = async (
   const { url, prompt, callbackUrl, id, type } = data;
 
   const host = getHost(url);
+  const cacheKey = createCacheKey(signSecret, id);
   await redis
     .multi()
-    .del(host)
-    .del(`${host}-links`)
-    .del(`${host}-scrapedLinks`)
+    .del(cacheKey)
+    .del(`${cacheKey}-links`)
+    .del(`${cacheKey}-scrapedLinks`)
     .exec();
   const baseApiMessage = {
     scraped: false,
@@ -43,9 +44,10 @@ export const handler = async (
     explored: 0,
     result: "",
     id: id || "",
+    host: host,
   };
   if (type === "text") {
-    await redis.hset(host, {
+    await redis.hset(cacheKey, {
       ...baseApiMessage,
       type: "text",
     });
@@ -54,18 +56,19 @@ export const handler = async (
 
     await redis
       .multi()
-      .hset(host, {
+      .hset(cacheKey, {
         ...baseApiMessage,
         type: "structured",
       })
-      .json.set(`${host}-schema`, "$", data.schema!)
+      .json.set(`${cacheKey}-schema`, "$", data.schema!)
       .exec();
   }
 
   await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
+    cacheKey,
     url: url,
-  }),
-    console.log(">>> Api Request processing completed");
+  });
+  console.log(">>> Api Request processing completed");
 
   done(null, {
     statusCode: 200,

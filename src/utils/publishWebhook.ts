@@ -1,8 +1,8 @@
 import type { WebHookEvent, WebHookEventData } from "@/utils/webHooks";
 import { publish } from "@/entites/sns";
 import { getSigniture, hash } from "@/utils/getSigniture";
-import { HostData, hostDataSchema } from "@/schemas/hostdata";
-import { getCache, redis } from "@/entites/cache";
+import { HostData } from "@/schemas/hostdata";
+import {redis } from "@/entites/cache";
 
 /**
  * Publish a webhook event to the SNS topic
@@ -11,14 +11,14 @@ import { getCache, redis } from "@/entites/cache";
  * @param headers - The headers to publish
  */
 
-export async function publishWebhook(host: string, data: WebHookEventData) {
+export async function publishWebhook(cacheKey: string, data: WebHookEventData) {
   const timestamp = Date.now().toString();
-  const cache = await redis.hmget<Pick<HostData, "callbackUrl" | "signSecret" | "id">>(host, "callbackUrl", "signSecret", "id");
+  const cache = await redis.hmget<Pick<HostData, "callbackUrl" | "signSecret" | "id">>(cacheKey, "callbackUrl", "signSecret", "id");
   if (!cache) {
     return;
   }
   const signature = getSigniture(data, cache.signSecret, timestamp);
-  const id = ((await redis.hget(host, "id")) as string) || "";
+  const id = ((await redis.hget(cacheKey, "id")) as string) || "";
   const webhookEvent = {
     webhook: cache.callbackUrl,
     data,

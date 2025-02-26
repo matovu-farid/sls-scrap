@@ -5,7 +5,10 @@ export const baseApiMessageSchema = z.object({
   url: z.string(),
   prompt: z.string(),
   callbackUrl: z.string(),
-  id: z.string().optional(),
+  id: z.string(),
+
+
+  recursive: z.boolean().optional(),
 });
 
 const textApiMessageSchema = baseApiMessageSchema.extend({

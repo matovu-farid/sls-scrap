@@ -12,6 +12,7 @@ export const baseHostDataSchema = z.object({
   found: z.number(),
   explored: z.number(),
   id: z.string(),
+  host: z.string(),
 });
 const textHostDataSchema = baseHostDataSchema.extend({
   type: z.literal("text"),

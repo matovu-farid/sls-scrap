@@ -4,7 +4,6 @@ import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { scrapMessageSchema } from "@/schemas/scapMessage";
 import type { SQSEvent, Context, Callback } from "aws-lambda";
 import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
-import { getHost } from "@/utils/get-host";
 
 export async function handler(
   event: SQSEvent,
@@ -12,10 +11,9 @@ export async function handler(
   done: Callback
 ) {
   event.Records.forEach(async (record) => {
-    const { url } = parseSNSMessegeInSQSRecord(record, scrapMessageSchema);
-    const host = getHost(url);
+    const { url, cacheKey } = parseSNSMessegeInSQSRecord(record, scrapMessageSchema);
 
-    const cache = await getCache<HostData>(host, hostDataSchema);
+    const cache = await getCache<HostData>(cacheKey, hostDataSchema);
     if (cache?.scraped) {
       done(null, {
         statusCode: 200,
@@ -24,12 +22,12 @@ export async function handler(
       return;
     }
 
-    await redis.hset(host, {
+    await redis.hset(cacheKey, {
       stage: "explore",
     });
 
-    if (!(await redis.sismember(`${host}-scrapedLinks`, url))) {
-      await explore(url);
+    if (!(await redis.sismember(`${cacheKey}-scrapedLinks`, url))) {
+      await explore(url, cacheKey);
     }
   });
   done(null, {

@@ -6,16 +6,16 @@ import { publishWebhook } from "./publishWebhook";
 import { getCache } from "@/entites/cache";
 import { HostData, hostDataSchema } from "@/schemas/hostdata";
 
-export async function explore(url: string) {
+export async function explore(url: string, cacheKey: string) {
   const browser = await getBrowser();
 
   const page = await browser.newPage();
   await page.goto(url.toString());
-  await getLinksForHost(page, getHost(url), url);
+  await getLinksForHost(page, getHost(url), url, cacheKey);
 
-  await exploreUrlsAndQueue(url, page);
-  const cache = await getCache<HostData>(getHost(url), hostDataSchema);
-  await publishWebhook(getHost(url), {
+  await exploreUrlsAndQueue(url, page, cacheKey);
+  const cache = await getCache<HostData>(cacheKey, hostDataSchema);
+  await publishWebhook(cacheKey, {
     id: cache?.id || "",
     type: "explore",
     data: {

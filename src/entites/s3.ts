@@ -5,11 +5,11 @@ import {
 } from "@aws-sdk/client-s3";
 import normalize from "normalize-url";
 
-export const getS3Key = (url: string) => {
+export const getS3Key = (url: string, cacheKey: string) => {
   const parsedURL = new URL(normalize(url));
   const host = parsedURL.host;
   const path = parsedURL.pathname;
-  return `${host}${path}`;
+  return `${cacheKey}/${host}${path}`;
 };
 const client = new S3Client({ region: "af-south-1" });
 
