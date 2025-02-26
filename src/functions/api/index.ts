@@ -52,6 +52,7 @@ export const handler = async (
     });
   } else {
     assert.ok(data.schema, ">>> Schema is required for structured scraping");
+
     await redis
       .multi()
       .hset(host, {

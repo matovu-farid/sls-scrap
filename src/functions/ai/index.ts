@@ -19,7 +19,7 @@ export async function handler(
     const { host } = parseSNSMessegeInSQSRecord(record, aiMessageSchema);
 
     const cache = await getCache<HostData>(host, hostDataSchema);
-    const schema = await redis.json.get(`${host}-schema`, "$");
+    const schema = await redis.json.get(`${host}-schema`);
     assert.ok(schema, ">>> Schema is required for structured scraping");
 
     await redis.hset(host, {
