@@ -18,22 +18,25 @@ export async function handler(
   event.Records.forEach(async (record: any) => {
     const { host } = parseSNSMessegeInSQSRecord(record, aiMessageSchema);
 
-    const cache = await getCache<HostData>(host, hostDataSchema);
+    const cache = await redis.hmget<Pick<HostData, "prompt" | "type">>(
+      host,
+      "prompt",
+      "type"
+    );
+
     const schema = await redis.json.get(`${host}-schema`);
     assert.ok(schema, ">>> Schema is required for structured scraping");
+    assert.ok(cache, ">>> Cache is required for scraping");
 
     await redis.hset(host, {
       stage: "ai",
     });
 
-    if (!cache) {
-      return;
-    }
-    let results: string | null = "";
+    let results: string = "";
     if (cache.type === "text") {
-      results = await scrape(host, cache.prompt);
+      results = (await scrape(host, cache.prompt)) || "";
     } else {
-      results = await scrapeStructured(host, cache.prompt, schema);
+      results = (await scrapeStructured(host, cache.prompt, schema)) || "";
     }
 
     if (!cache || !results) {
@@ -58,6 +61,7 @@ export async function handler(
 
   await Promise.allSettled(promises);
   console.log(">>> AI processing done");
+
   done(null, {
     statusCode: 200,
     body: "Success",
