@@ -1,9 +1,10 @@
 import { redis } from "@/entites/cache";
 import { ScrapMessage } from "@/schemas/scapMessage";
-import { apiMessageSchema } from "@/schemas/apiMessage";
+import { ApiMessage, apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 import { publish } from "@/entites/sns";
 import { getHost } from "@/utils/get-host";
+import { HostData } from "@/schemas/hostdata";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -28,9 +29,7 @@ export const handler = async (
   .del(`${host}-links`)
   .del(`${host}-scrapedLinks`)
   .exec();
-
-  await Promise.allSettled([
-    redis.hset(host, {
+  const apiMessage:HostData = {
       scraped: false,
       signSecret,
       callbackUrl,
@@ -39,9 +38,16 @@ export const handler = async (
       found: 0,
       explored: 0,
       result: "",
-      id,
+      id: id || "",
       type,
-    }),
+      schema: type === "structured" ? result.data.schema : undefined,
+    }
+   
+  
+ if (type === "text") 
+
+  await Promise.allSettled([
+    redis.hset(host, apiMessage),
     publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
       url: url,
     }),

@@ -1,4 +1,4 @@
-import { generateText, generateObject, Schema } from "ai";
+import { generateText, generateObject, Schema, jsonSchema } from "ai";
 import { getS3Key, setData } from "@/entites/s3";
 import { openai } from "@ai-sdk/openai";
 import { getContent } from "@/utils/content";
@@ -31,7 +31,7 @@ export const scrape = async (host: string, prompt: string) => {
 export const scrapeStructured = async <T>(
   host: string,
   prompt: string,
-  schema: Schema<T>
+  passedSchema: any
 ): Promise<string | null> => {
   const content = await getContent(host);
 
@@ -40,6 +40,7 @@ export const scrapeStructured = async <T>(
   }
 
   const textData = JSON.stringify(content);
+  const schema = jsonSchema<T>(passedSchema);
 
   const data = await generateObject<T>({
     model: openai("gpt-4o-mini"),
