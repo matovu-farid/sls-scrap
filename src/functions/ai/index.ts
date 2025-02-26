@@ -25,7 +25,6 @@ export async function handler(
     );
 
     const schema = await redis.json.get(`${host}-schema`);
-    assert.ok(schema, ">>> Schema is required for structured scraping");
     assert.ok(cache, ">>> Cache is required for scraping");
 
     await redis.hset(host, {
@@ -36,6 +35,7 @@ export async function handler(
     if (cache.type === "text") {
       results = (await scrape(host, cache.prompt)) || "";
     } else {
+      assert.ok(schema, ">>> Schema is required for structured scraping");
       results = (await scrapeStructured(host, cache.prompt, schema)) || "";
     }
 
