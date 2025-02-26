@@ -5,6 +5,7 @@ import { getContent } from "@/utils/content";
 
 export const scrape = async (host: string, prompt: string) => {
   const content = await getContent(host);
+  console.log(">>> content", content);
 
   if (!content) {
     return null;
@@ -23,6 +24,7 @@ export const scrape = async (host: string, prompt: string) => {
       ${textData}
       </Details>`,
   });
+  console.log(">>> text", text);
   await setData(`scraped-data/${getS3Key(host)}`, text);
 
   return text;

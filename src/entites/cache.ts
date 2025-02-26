@@ -28,8 +28,6 @@ export type NumberKeysType<T> = JSONPaths<KeysWithNumbers<T>>;
 
 export type Pathtype<T> = (string & Exclude<JSONPaths<T>, undefined>) | "$";
 
-
-
 //  export const getHashKey = <T>(key: keyof T & string) => {
 //   return async ( field: T[]) => {
 //     await redis.hget(key, field)
@@ -41,12 +39,15 @@ export const getCache = async <T>(key: string, schema: z.ZodSchema<T>) => {
 
   const result = schema.safeParse(data);
   if (!result.success) {
+    console.log(
+      ">>> Cache error",
+      result.error.errors.map((e) => e.message).join("\n")
+    );
     return null;
   }
+
   return result.data;
 };
-
-
 
 export async function delCache<T>(key: string, field: string) {
   return redis.hdel(key, field);
