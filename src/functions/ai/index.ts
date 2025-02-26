@@ -22,8 +22,7 @@ export async function handler(
     await redis.hset(host, {
       stage: "ai",
     });
-    console.log(">>> cache", cache);
-    console.log(">>> host", host);
+
 
     if (!cache) {
       return;
