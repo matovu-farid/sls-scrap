@@ -13,7 +13,7 @@ import { getCache, redis } from "@/entites/cache";
 
 export async function publishWebhook(host: string, data: WebHookEventData) {
   const timestamp = Date.now().toString();
-  const cache = await getCache<HostData>(host, hostDataSchema);
+  const cache = await redis.hmget<Pick<HostData, "callbackUrl" | "signSecret" | "id">>(host, "callbackUrl", "signSecret", "id");
   if (!cache) {
     return;
   }

@@ -9,6 +9,7 @@ import type { AiMessage } from "@/schemas/aiMessage";
 import { publishWebhook } from "@/utils/publishWebhook";
 import { getHost } from "./get-host";
 import { ScrapMessage } from "@/schemas/scapMessage";
+import { z } from "zod";
 
 const queryLinks = async (page: Page) => {
   return await page.evaluate(() => {
@@ -48,12 +49,17 @@ export async function getLinksForHost(page: Page, host: string, url: string) {
 }
 
 async function getLinksFromPage(page: Page, host: string, url: string) {
-  const links = (await queryLinks(page)).map(normalize);
+  const rawLinks = await queryLinks(page);
+  const links = [];
+  for (const link of rawLinks) {
+    if (!z.string().url().safeParse(link).success) continue;
+    const normalizedLink = normalize(link);
+    if (new URL(normalizedLink).host === host) {
+      links.push(normalizedLink);
+    }
+  }
 
-  const filteredLinks = Array.from(
-    new Set([...links.filter((link) => new URL(link).host === host), url])
-  );
-  return filteredLinks;
+  return Array.from(new Set([...links, url]));
 }
 
 export async function exploreUrlsAndQueue(url: string, page: Page) {

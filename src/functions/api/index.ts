@@ -44,7 +44,6 @@ export const handler = async (
     result: "",
     id: id || "",
   };
-  let apiMessage;
   if (type === "text") {
     await redis.hset(host, {
       ...baseApiMessage,
