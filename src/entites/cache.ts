@@ -38,22 +38,11 @@ type ValueType<T, P extends Pathtype<T>> = P extends "$"
   ? T[R]
   : never;
 
-function setCacheFor<T>(key: string) {
-  return function <P extends Pathtype<T>>(
-    path: P,
-    value: NonNullable<ValueType<T, P>>
-  ) {
-    return redis.json.set(key, path, value);
-  };
-}
-
-const appendCacheFor =
-  <T>(key: string) =>
-  <P extends Pathtype<T>>(
-    path: P,
-    value: NonNullable<ValueType<T, P>> extends Array<infer U> ? U : never
-  ) =>
-    redis.json.arrappend(key, path, value);
+//  export const getHashKey = <T>(key: keyof T & string) => {
+//   return async ( field: T[]) => {
+//     await redis.hget(key, field)
+//   };
+// };
 
 export const getCache = async <T>(key: string, schema: z.ZodSchema<T>) => {
   const data = await redis.hgetall(key);

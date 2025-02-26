@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { jsonSchemaSchema } from "./jsonschema";
 
 export const baseApiMessageSchema = z.object({
   url: z.string(),
@@ -13,7 +14,7 @@ const textApiMessageSchema = baseApiMessageSchema.extend({
 
 const structuredApiMessageSchema = baseApiMessageSchema.extend({
   type: z.literal("structured"),
-  schema: z.any(),
+  schema: jsonSchemaSchema,
 });
 
 export const apiMessageSchema = z.discriminatedUnion("type", [
