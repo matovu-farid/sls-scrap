@@ -5,6 +5,7 @@ import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 import { publish } from "@/entites/sns";
 import { getHost } from "@/utils/get-host";
 import { HostData } from "@/schemas/hostdata";
+import assert from "node:assert";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -24,8 +25,6 @@ export const handler = async (
   }
   const data = result.data;
   const { url, prompt, callbackUrl, id, type } = data;
-  
-
 
   const host = getHost(url);
   await redis
@@ -44,25 +43,25 @@ export const handler = async (
     explored: 0,
     result: "",
     id: id || "",
-    
-  }
-  let  apiMessage;
-  if( type === "text"){
+  };
+  let apiMessage;
+  if (type === "text") {
     await redis.hset(host, {
       ...baseApiMessage,
       type: "text",
-    })
+    });
   } else {
-    await redis.hset(host,{
-      ...baseApiMessage,
-      type: "structured",
-      schema: data.schema || undefined,
-    })
+    assert.ok(data.schema, ">>> Schema is required for structured scraping");
+    await redis
+      .multi()
+      .hset(host, {
+        ...baseApiMessage,
+        type: "structured",
+      })
+      .json.set(`${host}-schema`, "$", data.schema!)
+      .exec();
   }
-  
- 
 
-  
   await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
     url: url,
   }),

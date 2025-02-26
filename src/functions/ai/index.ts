@@ -5,6 +5,7 @@ import { HostData, hostDataSchema } from "@/schemas/hostdata";
 import { getCache, redis } from "@/entites/cache";
 import { publishWebhook } from "@/utils/publishWebhook";
 import { parseSNSMessegeInSQSRecord } from "@/utils/parse-sns";
+import assert from "node:assert";
 
 export async function handler(
   event: SQSEvent,
@@ -18,11 +19,12 @@ export async function handler(
     const { host } = parseSNSMessegeInSQSRecord(record, aiMessageSchema);
 
     const cache = await getCache<HostData>(host, hostDataSchema);
+    const schema = await redis.json.get(`${host}-schema`, "$");
+    assert.ok(schema, ">>> Schema is required for structured scraping");
 
     await redis.hset(host, {
       stage: "ai",
     });
-
 
     if (!cache) {
       return;
@@ -31,7 +33,7 @@ export async function handler(
     if (cache.type === "text") {
       results = await scrape(host, cache.prompt);
     } else {
-      results = await scrapeStructured(host, cache.prompt, cache.schema);
+      results = await scrapeStructured(host, cache.prompt, schema);
     }
 
     if (!cache || !results) {

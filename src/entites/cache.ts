@@ -41,6 +41,7 @@ export const getCache = async <T>(key: string, schema: z.ZodSchema<T>) => {
   if (!result.success) {
     console.log(
       ">>> Cache error",
+      `key: ${key}`,
       result.error.errors.map((e) => e.message).join("\n")
     );
     return null;

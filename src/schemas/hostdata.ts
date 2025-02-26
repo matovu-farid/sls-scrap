@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { jsonSchemaSchema } from "./jsonschema";
 
 export const baseHostDataSchema = z.object({
   stage: z.enum(["explore", "ai", "webhook", "api"]),
@@ -17,7 +18,6 @@ const textHostDataSchema = baseHostDataSchema.extend({
 });
 const structuredHostDataSchema = baseHostDataSchema.extend({
   type: z.literal("structured"),
-  schema: z.any(),
 });
 
 export const hostDataSchema = z.discriminatedUnion("type", [
