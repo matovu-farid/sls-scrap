@@ -95,7 +95,18 @@ export async function exploreUrlsAndQueue(
 
   // TODO: Make sure the message is sent to ai when explored === count
 
-  const cache = await getCache<HostData>(cacheKey, hostDataSchema);
+  const cache = await redis.hmget<Pick<HostData, "id" | "explored" | "found">>(cacheKey, "id", "explored", "found");
+  await publishWebhook(cacheKey, {
+    id: cache?.id || "",
+    type: "explore",
+    data: {
+      url,
+      explored: cache?.explored || 0,
+      found: cache?.found || 0,
+    },
+  })
+
+
   if (cache?.explored === cache?.found) {
     await Promise.allSettled([
       publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN!, {

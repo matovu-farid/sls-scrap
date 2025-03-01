@@ -14,15 +14,6 @@ export async function explore(url: string, cacheKey: string) {
   await getLinksForHost(page, getHost(url), url, cacheKey);
 
   await exploreUrlsAndQueue(url, page, cacheKey);
-  const cache = await getCache<HostData>(cacheKey, hostDataSchema);
-  await publishWebhook(cacheKey, {
-    id: cache?.id || "",
-    type: "explore",
-    data: {
-      url,
-      explored: cache?.explored || 0,
-      found: cache?.found || 0,
-    },
-  }),
-    browser.close();
+
+  browser.close();
 }
