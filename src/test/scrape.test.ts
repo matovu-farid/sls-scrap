@@ -63,6 +63,7 @@ describe("scrape api", () => {
           callbackUrl: process.env.TEST_SCRAP_CALLBACK_URL,
           id: "test_id",
           type: "text",
+          recursive: true,
         }),
         headers: {
           "x-api-key": "test",
