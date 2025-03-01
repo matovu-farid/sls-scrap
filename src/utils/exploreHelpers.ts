@@ -16,26 +16,34 @@ const queryLinks = async (page: Page) => {
   });
 };
 
-export async function getLinksForHost(
+export async function initLinksForHost(
   page: Page,
   host: string,
   url: string,
   cacheKey: string
 ) {
   if (await redis.scard(`${cacheKey}-links`)) {
-    return await redis.smembers(`${cacheKey}-links`);
+    return;
   }
   console.log(">>> Querying links from page");
   const links = await getLinksFromPage(page, host, url);
+  const tx = redis.multi();
+  links.forEach((link) => {
+    tx.sadd(`${cacheKey}-links`, JSON.stringify(link));
+  });
+  await tx.exec();
 
-  for (const link of links) {
-    await redis.sadd(`${cacheKey}-links`, JSON.stringify(link));
-    if (link === url) continue;
-    await publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
-      url: link,
-      cacheKey,
-    });
-  }
+ 
+  await Promise.all([
+    links
+      .filter((link) => link !== url)
+      .map((link) => {
+        publish<ScrapMessage>(process.env.EXPLORE_BEGIN_TOPIC_ARN!, {
+          url: link,
+          cacheKey,
+        });
+      }),
+  ]);
 
   await redis.hset(cacheKey, { found: links.length });
 
@@ -50,7 +58,6 @@ export async function getLinksForHost(
       host,
     },
   });
-  return links;
 }
 
 async function getLinksFromPage(page: Page, host: string, url: string) {
