@@ -13,6 +13,7 @@ export const baseHostDataSchema = z.object({
   explored: z.number(),
   id: z.string(),
   host: z.string(),
+  recursive: z.boolean(),
 });
 const textHostDataSchema = baseHostDataSchema.extend({
   type: z.literal("text"),

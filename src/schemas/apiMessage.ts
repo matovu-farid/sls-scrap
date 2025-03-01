@@ -6,9 +6,7 @@ export const baseApiMessageSchema = z.object({
   prompt: z.string(),
   callbackUrl: z.string(),
   id: z.string(),
-
-
-  recursive: z.boolean().optional(),
+  recursive: z.boolean(),
 });
 
 const textApiMessageSchema = baseApiMessageSchema.extend({
