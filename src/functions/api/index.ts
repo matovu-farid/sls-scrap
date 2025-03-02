@@ -18,9 +18,10 @@ export const handler = async (
   const signSecret = event.headers["x-api-key"] || "";
 
   if (!result.success) {
+    console.log(">>> Api Request processing failed", result.error);
     return {
       statusCode: 400,
-      body: "Invalid request, missing url, prompt or callbackUrl",
+      body: "Invalid request, missing url, prompt, or callbackUrl",
     };
   }
   const data = result.data;

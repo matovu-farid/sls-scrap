@@ -7,7 +7,6 @@ import { webHookSchema, webHookSchemaEventData } from "@/utils/webHooks";
 import { handler } from "@/functions/api";
 import type { APIGatewayProxyEvent, Callback, Context } from "aws-lambda";
 import assert from "assert";
-import { ApiMessage } from "@/schemas/apiMessage";
 
 const app = express();
 let server: Server;
@@ -56,17 +55,16 @@ describe("scrape api", () => {
 
         res.send("ok");
       });
-      const fakeBody: ApiMessage= {
-        url: "https://matovu-farid.com",
-        prompt: "What is this website about?",
-        callbackUrl: process.env.TEST_SCRAP_CALLBACK_URL!,
-        id: "test_id",
-        type: "text",
-        recursive: true,
-      }
 
       const FakeAPIGatewayProxyEvent = {
-        body: JSON.stringify(fakeBody),
+        body: JSON.stringify({
+          url: "https://matovu-farid.com",
+          prompt: "What is this website about?",
+          callbackUrl: process.env.TEST_SCRAP_CALLBACK_URL!,
+          id: "test_id",
+          type: "text",
+          recursive: true,
+        }),
         headers: {
           "x-api-key": "test",
         },
