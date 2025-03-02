@@ -1,9 +1,9 @@
 import type { Page } from "puppeteer-core";
 
 import { getS3Key, setData } from "@/entites/s3";
-import { getCache, redis } from "@/entites/cache";
+import { redis } from "@/entites/cache";
 import { normalize } from "@/utils/normalize";
-import { HostData, hostDataSchema } from "@/schemas/hostdata";
+import { HostData } from "@/schemas/hostdata";
 import { publish } from "@/entites/sns";
 import type { AiMessage } from "@/schemas/aiMessage";
 import { publishWebhook } from "@/utils/publishWebhook";
@@ -102,7 +102,22 @@ export async function exploreUrlsAndQueue(
 
   // TODO: Make sure the message is sent to ai when explored === count
 
-  const cache = await getCache<HostData>(cacheKey, hostDataSchema);
+  const cache = await redis.hmget<Pick<HostData, "id" | "explored" | "found">>(
+    cacheKey,
+    "id",
+    "explored",
+    "found"
+  );
+  await publishWebhook(cacheKey, {
+    id: cache?.id || "",
+    type: "explore",
+    data: {
+      url,
+      explored: cache?.explored || 0,
+      found: cache?.found || 0,
+    },
+  });
+
   if (cache?.explored === cache?.found) {
     await Promise.allSettled([
       publish<AiMessage>(process.env.EXPLORE_DONE_TOPIC_ARN!, {
