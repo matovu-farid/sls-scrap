@@ -37,6 +37,7 @@ provider:
     UPSTASH_REDIS_REST_TOKEN: ${env:UPSTASH_REDIS_REST_TOKEN}
     EXPLORE_BEGIN_TOPIC_ARN: ${env:EXPLORE_BEGIN_TOPIC_ARN}
     QUEUE_URL: ${env:QUEUE_URL}
+    PLATFORM_URL: ${ env:PLATFORM_URL }
   # layers:
   #   - ${env:CHROMIUM_LAYER_ARN}
   iam:
@@ -63,7 +64,6 @@ provider:
 
 functions:
   api:
-
     memorySize: 1024
     url:
       cors: true
@@ -84,7 +84,7 @@ functions:
   explore:
     layers:
       - ${env:CHROMIUM_LAYER_ARN}
-   
+
     timeout: 900
     memorySize: 1024
 

@@ -13,7 +13,7 @@ const validateApiKeySchema = z.object({
 
 export async function isValidApiKey(apiKey: string) {
   const response = await axios.post(
-    `${process.env.PLATFORM_URL}/api/v1/validate`,
+    `${process.env.PLATFORM_URL!}/api/v1/validate`,
     validateApiKeySchema.parse({
       apiKey,
     })

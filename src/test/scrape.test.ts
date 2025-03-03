@@ -1,11 +1,8 @@
 import express from "express";
 import type { Server } from "http";
 import bodyParser from "body-parser";
-import { hash } from "@/utils/getSigniture.js";
-import { expect, it, describe, beforeAll, afterAll, jest } from "bun:test";
-import { webHookSchema, webHookSchemaEventData } from "@/utils/webHooks";
-import { handler } from "@/functions/api";
-import type { APIGatewayProxyEvent, Callback, Context } from "aws-lambda";
+import { expect, it, describe, beforeAll, afterAll } from "bun:test";
+import { webHookSchemaEventData } from "@/utils/webHooks";
 import assert from "assert";
 import axios from "axios";
 
