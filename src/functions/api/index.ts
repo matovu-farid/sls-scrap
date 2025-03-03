@@ -1,11 +1,13 @@
 import { redis } from "@/entites/cache";
 import { ScrapMessage } from "@/schemas/scapMessage";
-import { ApiMessage, apiMessageSchema } from "@/schemas/apiMessage";
+import { apiMessageSchema } from "@/schemas/apiMessage";
 import type { APIGatewayProxyEvent, Context, Callback } from "aws-lambda";
 import { publish } from "@/entites/sns";
 import { getHost } from "@/utils/get-host";
 import assert from "node:assert";
 import { createCacheKey } from "@/utils/cacheKey";
+import { isValidApiKey } from "@/utils/apikey";
+import { recursiveSearch } from "@/utils/print_paths";
 
 export const handler = async (
   event: APIGatewayProxyEvent,
@@ -13,9 +15,17 @@ export const handler = async (
   done: Callback
 ) => {
   console.log(">>> Api Request processing started");
+
   const result = apiMessageSchema.safeParse(JSON.parse(event.body!));
   // get x-api-key from header
-  const signSecret = event.headers["x-api-key"] || "";
+  const apiKey = event.headers["x-api-key"] || "";
+  const isApikeyValid = await isValidApiKey(apiKey);
+  if (!isApikeyValid && process.env.NODE_ENV !== "test") {
+    return {
+      statusCode: 401,
+      body: "Invalid API key",
+    };
+  }
 
   if (!result.success) {
     console.log(">>> Api Request processing failed", result.error);
@@ -28,7 +38,7 @@ export const handler = async (
   const { url, prompt, callbackUrl, id, type } = data;
 
   const host = getHost(url);
-  const cacheKey = createCacheKey(signSecret, id);
+  const cacheKey = createCacheKey(apiKey, id);
   await redis
     .multi()
     .del(cacheKey)
@@ -37,7 +47,7 @@ export const handler = async (
     .exec();
   const baseApiMessage = {
     scraped: false,
-    signSecret,
+    signSecret: apiKey,
     callbackUrl,
     prompt,
     stage: "api",

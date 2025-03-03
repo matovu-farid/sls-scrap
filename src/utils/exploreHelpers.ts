@@ -9,6 +9,7 @@ import type { AiMessage } from "@/schemas/aiMessage";
 import { publishWebhook } from "@/utils/publishWebhook";
 import { ScrapMessage } from "@/schemas/scapMessage";
 import { z } from "zod";
+import { createMetreEvent } from "./stripe";
 
 const queryLinks = async (page: Page) => {
   return await page.evaluate(() => {
@@ -27,13 +28,16 @@ export async function initLinksForHost(
   }
   console.log(">>> Querying links from page");
   const links = await getLinksFromPage(page, host, url);
+
   const tx = redis.multi();
   links.forEach((link) => {
     tx.sadd(`${cacheKey}-links`, JSON.stringify(link));
   });
-  await tx.exec();
+  await Promise.allSettled([
+    tx.exec(),
+    createMetreEvent(cacheKey, links.length),
+  ]);
 
- 
   await Promise.all([
     links
       .filter((link) => link !== url)
