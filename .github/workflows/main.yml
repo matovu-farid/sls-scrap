@@ -22,6 +22,7 @@ jobs:
       SCRAPE_TOPIC_ARN: ${{ secrets.SCRAPE_TOPIC_ARN }}
       EXPLORE_DONE_TOPIC_ARN: ${{ secrets.EXPLORE_DONE_TOPIC_ARN }}
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      MY_AWS_REGION: ${{ secrets.MY_AWS_REGION }}
 
     name: deploy
     runs-on: ubuntu-latest
