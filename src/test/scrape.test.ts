@@ -1,12 +1,10 @@
 import express from "express";
 import type { Server } from "http";
 import bodyParser from "body-parser";
-import { hash } from "@/utils/getSigniture.js";
-import { expect, it, describe, beforeAll, afterAll, jest } from "bun:test";
-import { webHookSchema, webHookSchemaEventData } from "@/utils/webHooks";
-import { handler } from "@/functions/api";
-import type { APIGatewayProxyEvent, Callback, Context } from "aws-lambda";
+import { expect, it, describe, beforeAll, afterAll } from "bun:test";
+import { webHookSchemaEventData } from "@/utils/webHooks";
 import assert from "assert";
+import axios from "axios";
 
 const app = express();
 let server: Server;
@@ -56,26 +54,44 @@ describe("scrape api", () => {
         res.send("ok");
       });
 
-      const FakeAPIGatewayProxyEvent = {
-        body: JSON.stringify({
+      // const FakeAPIGatewayProxyEvent = {
+      //   body: JSON.stringify({
+      //     url: "https://matovu-farid.com",
+      //     prompt: "What is this website about?",
+      //     callbackUrl: process.env.TEST_SCRAP_CALLBACK_URL!,
+      //     id: "test_id",
+      //     type: "text",
+      //     recursive: true,
+      //   }),
+      //   headers: {
+      //     "x-api-key": process.env.TEST_SCRAP_API_KEY!,
+      //   },
+      // };
+      // const FakeContext = {};
+      // const FakeCallback = () => {};
+      await axios.post(
+        "https://cxv2yfzmd4dnzmqjrb3byt25sm0zqdia.lambda-url.af-south-1.on.aws",
+        {
           url: "https://matovu-farid.com",
           prompt: "What is this website about?",
-          callbackUrl: process.env.TEST_SCRAP_CALLBACK_URL,
+          callbackUrl: process.env.TEST_SCRAP_CALLBACK_URL!,
           id: "test_id",
           type: "text",
-        }),
-        headers: {
-          "x-api-key": "test",
+          recursive: true,
         },
-      };
-      const FakeContext = {};
-      const FakeCallback = () => {};
-      // act
-      await handler(
-        FakeAPIGatewayProxyEvent as unknown as APIGatewayProxyEvent,
-        FakeContext as unknown as Context,
-        FakeCallback as unknown as Callback
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": process.env.TEST_SCRAP_API_KEY!,
+          },
+        }
       );
+      // act
+      // await handler(
+      //   FakeAPIGatewayProxyEvent as unknown as APIGatewayProxyEvent,
+      //   FakeContext as unknown as Context,
+      //   FakeCallback as unknown as Callback
+      // );
 
       await new Promise((resolve) => {
         const timeout = setTimeout(() => {

@@ -1,0 +1,13 @@
+#! /bin/bash
+cd src/functions/api
+bun install
+cd ../../
+cd src/functions/ai
+bun install
+cd ../../
+cd src/functions/scrape
+bun install
+cd ../../
+cd src/functions/webhook
+bun install
+cd ../../

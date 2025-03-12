@@ -1,4 +1,4 @@
-import { exploreUrlsAndQueue, getLinksForHost } from "@/utils/exploreHelpers";
+import { exploreUrlsAndQueue, initLinksForHost } from "@/utils/exploreHelpers";
 // @ts-ignore
 import { getBrowser } from "@/utils/getBrowser";
 import { getHost } from "./get-host";
@@ -11,7 +11,7 @@ export async function explore(url: string, cacheKey: string) {
 
   const page = await browser.newPage();
   await page.goto(url.toString());
-  await getLinksForHost(page, getHost(url), url, cacheKey);
+  await initLinksForHost(page, getHost(url), url, cacheKey);
 
   await exploreUrlsAndQueue(url, page, cacheKey);
 

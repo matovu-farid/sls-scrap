@@ -12,7 +12,9 @@ package:
 build:
   esbuild:
     # Enable or Disable bundling the function code and dependencies into a single file. (Default: true)
-    bundle: true
+    # bundle: true
+    minify: true
+
     # format: cjs
     # outfile: out.cjs
     # packages: external
@@ -28,13 +30,14 @@ build:
 provider:
   name: aws
   runtime: nodejs22.x
-  region: ${env:AWS_REGION}
+  region: ${env:MY_AWS_REGION}
 
   environment:
     UPSTASH_REDIS_REST_URL: ${env:UPSTASH_REDIS_REST_URL}
     UPSTASH_REDIS_REST_TOKEN: ${env:UPSTASH_REDIS_REST_TOKEN}
     EXPLORE_BEGIN_TOPIC_ARN: ${env:EXPLORE_BEGIN_TOPIC_ARN}
     QUEUE_URL: ${env:QUEUE_URL}
+    PLATFORM_URL: ${ env:PLATFORM_URL }
   # layers:
   #   - ${env:CHROMIUM_LAYER_ARN}
   iam:
@@ -62,10 +65,12 @@ provider:
 functions:
   api:
     memorySize: 1024
-    events:
-      - http:
-          path: api/scrap
-          method: post
+    url:
+      cors: true
+    # events:
+    #   - http:
+    #       path: api/scrap
+    #       method: post
     handler: src/functions/api/index.handler
     package:
       individually: true
@@ -79,6 +84,7 @@ functions:
   explore:
     layers:
       - ${env:CHROMIUM_LAYER_ARN}
+
     timeout: 900
     memorySize: 1024
 
@@ -128,9 +134,9 @@ functions:
       OPENAI_API_KEY: ${env:OPENAI_API_KEY}
   webhooks:
     events:
-    - sqs:
-        arn: ${env:WEBHOOK_QUEUE_ARN}
-        batchSize: 1
+      - sqs:
+          arn: ${env:WEBHOOK_QUEUE_ARN}
+          batchSize: 1
     handler: src/functions/webhooks/index.handler
     package:
       individually: true
